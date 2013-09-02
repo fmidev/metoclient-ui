@@ -1,0 +1,3 @@
+MetOClient UI
+
+Version: <GRUNT_REPLACE_VERSION>

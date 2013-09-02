@@ -1,0 +1,309 @@
+/**
+ * OpenLayers map, controller and other animator components
+ * are inserted inside animator element.
+ *
+ * Notice, animator uses relative dimensions.
+ * Therefore, parent element should have some dimensions
+ * in order to make animator also visible.
+ */
+.animator {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    /* Prevent text selection. */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: moz-none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/**
+ * Animator map and animation controls are inserted into this container.
+ */
+.animatorAnimation {
+    position: absolute;
+    width: 85%;
+    height: 100%;
+}
+
+/**
+ * Legend components are inserted into this container.
+ */
+.animatorLegend {
+    position: absolute;
+    right: 0;
+    width: 15%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Special case for no legend. */
+.animatorAnimationNoLegend {
+    /* Animation uses also legend area. */
+    width: 100%;
+    height: 100%
+}
+.animatorLegendNoLegend {
+    /* Hide whole legend element. */
+    display: none;
+}
+
+.animatorLayerSwitcher {
+    position: absolute;
+    top: 15px;
+    /* Opens inside of the map to the left in the right side of the wrapping container. */
+    right: 0;
+    /* See, .olControlLayerSwitcher */
+    width: 20em;
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: smaller;
+    color: rgb(231, 166, 78);
+}
+.animatorLayerSwitcher .layersDiv {
+    padding: 5px 10px 5px 10px;
+    background: rgb(88, 88, 88);
+    border-radius: 5px 0 0 5px;
+}
+.animatorLayerSwitcher .layersDiv .baseLbl, .animatorLayerSwitcher .layersDiv .dataLbl {
+    margin-top: 3px;
+    margin-left: 3px;
+    margin-bottom: 3px;
+}
+
+.animatorLayerlayerSwitcher .layersDiv .baseLayersDiv, .animatorLayerSwitcher .layersDiv .dataLayersDiv {
+    padding-left: 10px;
+}
+
+.animatorLayerSwitcher .maximizeDiv {
+    cursor: pointer;
+    background: rgb(88, 88, 88);
+    right: 0;
+    border-radius: 5px 0 0 5px;
+    /* Center the image element with some padding. */
+    padding: 10px 4px 8px 4px;
+}
+.animatorLayerSwitcher .minimizeDiv {
+    cursor: pointer;
+    top: 0;
+    right: 0;
+    border-radius: 5px 0 0 5px;
+    /* Center the image element with some padding. */
+    padding: 10px 4px 8px 4px;
+}
+
+.animatorLogo {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    width: 140px;
+    height: 33px;
+    background-image: url("img/fmi_logo.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 9999999;
+}
+.animatorPlayAndPause {
+    cursor: pointer;
+    position: absolute;
+    left: 5px;
+    bottom: 5px;
+    width: 33px;
+    height: 33px;
+    background-image: url("img/play.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 9999999;
+    opacity: 0.85;
+}
+
+/**
+ * Controller is located to the bottom of the animator.
+ */
+.animatorController {
+    position: absolute;
+    cursor: pointer;
+    bottom: 0;
+    /*
+     * Notice, controller slider moves outside of the scale area. The area outside scale is 50px in each side.
+     * Therefore, if map and controller width are set equal, the scale are is actually 2*50px less.
+     * If map and scale side should be in equal positions, controller left should be -50px and its width 2*50px
+     * greater than map. This way slider scale will be as wide as the map and the slider can overlap the container
+     * border.
+     */
+    width: 100%;
+    height: 70px;
+    overflow: hidden;
+}
+
+/**
+ * Map is located above controller and it fills the rest of the space vertically.
+ */
+.animatorMap {
+    position: absolute;
+    top: 0;
+    bottom: 70px;
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    /*
+     * This fixes the overflow:hidden in Chrome.
+     * Otherwise map image would not have rounded corners in Chrome when map is moved or if border is not separately defined.
+     * Notice, if border itself is defined above, make sure that border corners are shown correctly if map is moved.
+     */
+    -webkit-mask-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAAAXNSR0IArs4c6QAAAApJREFUCNdjYAAAAAIAAeIhvDMAAAAASUVORK5CYII=");
+}
+
+/* OpenLayers style cascade replacements */
+
+/**
+ * Layer switcher
+ */
+.olControlLayerSwitcher {
+    color: rgb(231, 166, 78);
+}
+
+.olControlLayerSwitcher .layersDiv {
+    background: #585858; /* fallback for IE */
+    background: rgb(88, 88, 88);
+}
+
+div.olControlZoom {
+    top: 15px;
+    left: 0;
+    border-radius: 0;
+    padding: 0;
+}
+div.olControlZoom a {
+    margin: 0;
+    margin-bottom: 5px;
+    color: rgb(231,166,78);
+    font-size: 24px;
+    height: 24px;
+    width: 24px;
+    background: #585858; /* fallback for IE - IE6 requires background shorthand */
+    background: rgba(88, 88, 88, 1);
+}
+div.olControlZoom a:hover {
+    background: #585858; /* fallback for IE */
+    background: rgba(88, 88, 88, 0.7);
+}
+@media only screen and (max-width: 600px) {
+    div.olControlZoom a:hover {
+        background: #585858; /* fallback for IE */
+        background: rgba(88, 88, 88, 0.5);
+    }
+}
+.olControlZoomIn {
+    border-radius: 0 4px 4px 0;
+}
+.olControlZoomOut {
+    border-radius: 0 4px 4px 0;
+}
+
+/* Animator legend styles. */
+
+/**
+ * Marks selected item.
+ */
+.selectedLegend {
+    border-color: silver;
+    border-width: 2px;
+}
+
+/**
+ * Legend components below are inserted into this container.
+ */
+.animatorLegendThumbnails {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    overflow: hidden;
+}
+
+/**
+ * Selected legend as a big view.
+ */
+.animatorLegendView {
+    position: absolute;
+    top: 0;
+    bottom: 162px;
+    width: 100%;
+    background-position: bottom left;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+/* In case of only one legend, only legend view is shown. */
+.animatorLegendViewOne {
+    /* Height from top to bottom. */
+    bottom: 0;
+    background-position: top left;
+}
+.animatorLegendThumbnailsNone {
+    /* Thumbnails related elements are hidden. */
+    display: none;
+}
+
+/*
+ * Animator legends thumbnails are inserted into scroll-pane.
+ * See: http://jqueryui.com/slider/#side-scroll
+ */
+
+.scroll-pane {
+    overflow: auto;
+    /* Make sure right borders are not cut and hidden. */
+    width: 98%;
+    float: left;
+}
+.scroll-content {
+    /*
+     * Width is updated dynamically in JavaScript when content is added.
+     * Then, one line is always used. Otherwise, float would wrap to new line
+     * when content exceeds the width.
+     */
+    float: left;
+}
+.scroll-content-item {
+    cursor: pointer;
+    width: 100px;
+    height: 100px;
+    float: left;
+    margin: 10px;
+    font-size: 3em;
+    line-height: 96px;
+    text-align: center;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+.scroll-bar-wrap {
+    clear: left;
+    padding: 0 4px 0 2px;
+    margin: 0 -1px -1px -1px;
+}
+.scroll-bar-wrap .ui-slider {
+    background: none;
+    border: 0;
+    height: 2em;
+    margin: 0 auto;
+}
+.scroll-bar-wrap .ui-handle-helper-parent {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+}
+.scroll-bar-wrap .ui-slider-handle {
+    top: .2em;
+    height: 1.5em;
+}
+.scroll-bar-wrap .ui-slider-handle .ui-icon {
+    margin: -8px auto 0;
+    position: relative;
+    top: 50%;
+}

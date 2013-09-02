@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Animator</title>
+
+        <!-- Internal style for this component specific HTML file. -->
+        <style>
+            html, body {
+                /*
+                 * Margin and padding set to zero as default.
+                 * Then, content is fit exactly into iframe if it is used.
+                 */
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+            }
+            body {
+                font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+            }
+            .animatorContainer {
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+
+        <!-- Stylesheets -->
+        <link rel="stylesheet" type="text/css" href="../dist/deps/jquery-ui-1.10.3/jquery-ui.min.css" />
+        <link rel="stylesheet" type="text/css" href="../dist/deps/OpenLayers-2.13.1/theme/default/style.css" />
+        <!-- Commponent styles may override defaults. -->
+        <link rel="stylesheet" type="text/css" href="../dist/components/animator/css/style-min.css" />
+
+        <!-- JavaScript libraries -->
+        <script type="text/javascript" src="../dist/deps/OpenLayers-2.13.1/OpenLayers.js"></script>
+        <script type="text/javascript" src="../dist/deps/jquery/jquery-1.10.2-min.js"></script>
+        <script type="text/javascript" src="../dist/deps/jquery-ui-1.10.3/jquery-ui.min.js"></script>
+        <script type="text/javascript" src="../dist/deps/raphael/raphael-2.1.0-min.js"></script>
+        <script type="text/javascript" src="../dist/deps/animation/openlayers-animation-1.0.0-min.js"></script>
+        <script type="text/javascript" src="../dist/components/animator/js/animator-min.js"></script>
+        <script type="text/javascript" src="../dist/components/animator/js/config.js"></script>
+
+        <script type="text/javascript">
+            $(function() {
+                // When document is ready.
+                (new fi.fmi.metoclient.ui.animator.Animator()).init({
+                    // Animator content is inserted into container.
+                    // Default animator element structures are used here.
+                    animatorContainerDivId : "animatorContainerId",
+                    // Configuration defines map and layers for animator.
+                    // Notice, fi.fmi.metoclient.ui.animator.Config object is also used
+                    // as a default if config is not provided. But, this is shown here
+                    // as an example. Another config object may also be provided here.
+                    // See comments in fi.fmi.metoclient.ui.animator.Config for more detailed
+                    // description of the config object.
+                    config : fi.fmi.metoclient.ui.animator.Config
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div class="animatorContainer" id="animatorContainerId">
+            <!-- Insert component here. -->
+        </div>
+    </body>
+</html>

@@ -1,0 +1,79 @@
+/**
+ * Container for the whole component.
+ */
+.graphComponent {
+    /* Fill the whole parent element. */
+    width: 100%;
+    height: 100%;
+    /* Use default cursor also for text. */
+    cursor: default;
+    /* Prevent text selection. */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: moz-none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/**
+ * Container for the flot elements.
+ */
+.graphPlaceholder {
+    float: left;
+    /* Width and height are set dynamically in JS. */
+}
+
+/**
+ * Container for the graph footer elements.
+ */
+.graphFooter {
+    /* Center content horizontally. */
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+/* Parameter selection related classes. */
+
+.divParameterSelectImg {
+    float: left;
+    width: 17px;
+    height: 100%;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background: rgb(88, 88, 88);
+    border-radius: 5px 0 0 5px;
+}
+
+.divMaximize {
+    /* Image URL for JS purposes. */
+    background-image: url("img/maximize.png");
+}
+
+.divMinimize {
+    /* Image URL for JS purposes. */
+    background-image: url("img/minimize.png");
+}
+
+.selectionContainer {
+    float: left;
+    /* Clip content when dimension of container changes. */
+    overflow: hidden;
+}
+
+.selectable {
+    list-style-type: none;
+    /* Padding zero to start selection immediately next to image. */
+    padding: 0;
+}
+
+.selectable .ui-selecting {
+    background: #FECA40;
+    color: white;
+}
+
+.selectable .ui-selected {
+    background: #F39814;
+    color: white;
+}
