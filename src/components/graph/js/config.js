@@ -82,6 +82,6 @@ fi.fmi.metoclient.ui.graph.Config = {
      * Cache may be used for data queries.
      * Optional property. May be {undefined} or {null}. Default is {false}.
      */
-    useCache : false
+    useCache : true
 
 };
