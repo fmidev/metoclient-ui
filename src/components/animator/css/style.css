@@ -246,7 +246,7 @@ div.olControlZoom a:hover {
     top: 0;
     bottom: 162px;
     width: 100%;
-    background-position: bottom left;
+    background-position: left center;
     background-repeat: no-repeat;
     background-size: contain;
 }
@@ -255,7 +255,7 @@ div.olControlZoom a:hover {
 .animatorLegendViewOne {
     /* Height from top to bottom. */
     bottom: 0;
-    background-position: top left;
+    background-position: left center;
 }
 .animatorLegendThumbnailsNone {
     /* Thumbnails related elements are hidden. */
