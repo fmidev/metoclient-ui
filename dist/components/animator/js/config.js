@@ -161,6 +161,13 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // given here and animation resolution is used for showing animation of all the
                 // layers.
                 resolutionTime : 60 * 60 * 1000,
+                // Browser may limit total number of simultaneous asynchronous requests.
+                // Therefore, animation layer may be configured to limit its own asynchronous
+                // loads to avoid possible timeouts. Notice, if multiple animation layers are used,
+                // each of them have their own limit but browser limits the whole bundle.
+                // Also notice, limiting asynchronous loads may slow down the completion of
+                // animation loading. So, use limit only if timeouts may occur otherwise.
+                maxAsyncLoadCount : 4,
                 // For forecasts we use different layer.
                 // Notice, we do not need to define default layer here again.
                 layers : [{
@@ -242,6 +249,13 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // Therefore, last value may be a forecast if server provides
                 // that kind of data.
                 endTime : new Date(),
+                // Browser may limit total number of simultaneous asynchronous requests.
+                // Therefore, animation layer may be configured to limit its own asynchronous
+                // loads to avoid possible timeouts. Notice, if multiple animation layers are used,
+                // each of them have their own limit but browser limits the whole bundle.
+                // Also notice, limiting asynchronous loads may slow down the completion of
+                // animation loading. So, use limit only if timeouts may occur otherwise.
+                maxAsyncLoadCount : 4,
                 // Load automatically when layer is added to the map.
                 autoLoad : true
             },
@@ -291,6 +305,13 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // the time period specific name is given when legend
                 // is requested via API.
                 name : "Temperature",
+                // Browser may limit total number of simultaneous asynchronous requests.
+                // Therefore, animation layer may be configured to limit its own asynchronous
+                // loads to avoid possible timeouts. Notice, if multiple animation layers are used,
+                // each of them have their own limit but browser limits the whole bundle.
+                // Also notice, limiting asynchronous loads may slow down the completion of
+                // animation loading. So, use limit only if timeouts may occur otherwise.
+                maxAsyncLoadCount : 4,
                 // Load automatically when layer is added to the map.
                 autoLoad : true
             },
