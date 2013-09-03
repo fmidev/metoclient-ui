@@ -50,6 +50,19 @@
     display: none;
 }
 
+/**
+ * Animator progressbar for load operations.
+ */
+.animatorLoadProgressbar {
+    position: absolute;
+    left: 10%;
+    height: 12px;
+    width: 80%;
+    z-index: 999999;
+    /* Hide as default. */
+    display: none;
+}
+
 .animatorLayerSwitcher {
     position: absolute;
     top: 15px;

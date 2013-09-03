@@ -1355,6 +1355,10 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // multiple functions are not set if legends are created multiple times.
         var _legendResize;
 
+        // Keeps track of the layers that are loading data.
+        // Then, progress bar can be shown accordingly.
+        var _loadingLayers = [];
+
         // OpenLayers Animation events and corresponding callbacks.
         // Animation events are forwarded to these functions.
         var _events = {
@@ -1374,6 +1378,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         //--------------------------------------------
 
         _events.animationloadstarted = function(event) {
+            progressbarLoadStarted(event.layer);
             firePause();
             jQuery.each(_animationEventsListeners, function(index, value) {
                 value.loadAnimationStartedCb(event);
@@ -1399,6 +1404,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         };
 
         _events.animationloadcomplete = function(event) {
+            progressbarLoadComplete(event.layer);
             firePlay();
             jQuery.each(_animationEventsListeners, function(index, value) {
                 value.loadCompleteCb(event);
@@ -1406,6 +1412,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         };
 
         _events.animationframecontentreleased = function(event) {
+            progressbarLoadComplete(event.layer);
             jQuery.each(_animationEventsListeners, function(index, value) {
                 value.animationFrameContentReleasedCb(event);
             });
@@ -1419,6 +1426,48 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         // Private functions.
         //-------------------
+
+        // Functions that handle events.
+        //------------------------------
+
+        /**
+         * Update progressbar after layer has started loading.
+         *
+         * @param {OpenLayers.Layer} layer Layer that has started loading.
+         *                                 May be {undefined} or {null}.
+         */
+        function progressbarLoadStarted(layer) {
+            if (layer && -1 === jQuery.inArray(layer, _loadingLayers)) {
+                if (!_loadingLayers.length) {
+                    // First layer to start loading.
+                    // So, start showing progressbar.
+                    jQuery(".animatorLoadProgressbar").show();
+                }
+                // Layer was not in the loading array yet.
+                _loadingLayers.push(layer);
+            }
+        }
+
+        /**
+         * Update progressbar after layer has completed loading.
+         *
+         * @param {OpenLayers.Layer} layer Layer that has completed loading.
+         *                                 May be {undefined} or {null}.
+         */
+        function progressbarLoadComplete(layer) {
+            if (layer && _loadingLayers.length) {
+                var layerIndex = jQuery.inArray(layer, _loadingLayers);
+                if (-1 !== layerIndex) {
+                    // Remove layer from loading layers array.
+                    _loadingLayers.splice(layerIndex, 1);
+                    if (!_loadingLayers.length) {
+                        // No loading layers left.
+                        // So, stop showing progressbar.
+                        jQuery(".animatorLoadProgressbar").hide();
+                    }
+                }
+            }
+        }
 
         // Functions that provide animation default initialization values.
         //----------------------------------------------------------------
@@ -1939,6 +1988,16 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          * Set layers into the map.
          */
         function setMapAndLayers() {
+            if (_options.animationDivId) {
+                // Add progressbar element.
+                var loadProgressbar = jQuery('<div class="animatorLoadProgressbar"></div>');
+                jQuery("#" + _options.animationDivId).append(loadProgressbar);
+                loadProgressbar.progressbar({
+                    value : false
+                });
+                // Make sure progress bar element is hidden as default.
+                loadProgressbar.hide();
+            }
             if (_options.mapDivId) {
                 var map = _config.getMap();
                 if (map) {
