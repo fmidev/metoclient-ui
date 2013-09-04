@@ -55,9 +55,10 @@
  */
 .animatorLoadProgressbar {
     position: absolute;
-    left: 10%;
-    height: 12px;
-    width: 80%;
+    top: 40%;
+    left: 30%;
+    width: 40%;
+    /* Use component default height. */
     z-index: 999999;
     /* Hide as default. */
     display: none;
