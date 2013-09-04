@@ -249,6 +249,42 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // Therefore, last value may be a forecast if server provides
                 // that kind of data.
                 endTime : new Date(),
+                // Fade-in may also be configured for animation if default is not good enough.
+                fadeIn : {
+                    // For an example, fade-in time is set longer for this animation layer. Resolution
+                    // of this animation layer is couple of times greater than in other animation layers.
+                    // So, there is a little bit more time to fade-in and fade-out because same frame is
+                    // shown for couple of steps when other animation layers change frames. The extra time
+                    // available depends also on the animation frame-rate.
+                    time : 2000,
+                    // Fade-in function may also be defined.
+                    // Default is "ease-out".
+                    timingFunction : "linear"
+                },
+                // Fade-out may also be configured if default is not good enough.
+                fadeOut : {
+                    // For an example, fade-out time is set longer for this animation layer. Resolution
+                    // of this animation layer is couple of times greater than in other animation layers.
+                    // So, there is a little bit more time to fade-in and fade-out because same frame is
+                    // shown for couple of steps when other animation layers change frames. The extra time
+                    // available depends also on the animation frame-rate.
+                    time : 2000,
+                    // Fade-out function may also be defined.
+                    timingFunction : "ease-in",
+                    // Opacities for multiple fade-out steps.
+                    // Notice, each step has its final opacity set
+                    // and usually last opacity should be zero to hide the frame.
+                    // Also notice, if animation resolution is long and these steps are defined,
+                    // previous frame images may be separately visible and animation does not
+                    // seem to change frames smoothly. This is most likely the case in this example
+                    // because this animation layer has a long resolution set. But, by using
+                    // this property, in some cases, you may find a configuration that smoothens
+                    // animation by overlapping previous animation frames with different opacities.
+                    // For example purposes, the property is set here even if its value provides default
+                    // behaviour and the property could be left undefined. You may try, for example,
+                    // [0.5, 0.2, 0] to test the effect of the property.
+                    opacities : [0]
+                },
                 // Browser may limit total number of simultaneous asynchronous requests.
                 // Therefore, animation layer may be configured to limit its own asynchronous
                 // loads to avoid possible timeouts. Notice, if multiple animation layers are used,
