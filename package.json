@@ -3,6 +3,10 @@
   "version": "1.1.0",
   "author": "FMI",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fmidev/metoclient-ui.git"
+  },
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-contrib-clean": "~0.4.1",
