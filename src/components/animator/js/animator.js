@@ -911,6 +911,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         /**
          * See API for function description.
          */
+        function getConfig() {
+            return _config;
+        }
+
+        /**
+         * See API for function description.
+         */
         function init(options) {
             if (!_options && options) {
                 // Set options and create config only once.
@@ -986,6 +993,20 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          * @return {this} Reference to this This instance.
          */
         this.init = init;
+
+        /**
+         * Getter for configuration API object.
+         *
+         * Configuration API provides getter functions for animation configurations and also for
+         * {OpenLayers} components. Then, for example, animation {OpenLayers.Map} is available
+         * via the API.
+         *
+         * See, {fi.fmi.metoclient.ui.animator.Factory} API for more detailed description.
+         *
+         * @return {Object} Configuration API object.
+         *                  May be {undefined} if animator has not been initialized by calling {init}.
+         */
+        this.getConfig = getConfig;
 
     };
 

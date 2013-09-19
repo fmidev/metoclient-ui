@@ -552,7 +552,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         this.getAnimationFrameRate = getAnimationFrameRate;
 
         /**
-         * @return {Integer} Animation resolution time  in milliseconds that is used for the animation.
+         * @return {Integer} Animation resolution time in milliseconds that is used for the animation.
          */
         this.getAnimationResolution = getAnimationResolution;
 
