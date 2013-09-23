@@ -555,7 +555,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         this.getAnimationFrameRate = getAnimationFrameRate;
 
         /**
-         * @return {Integer} Animation resolution time  in milliseconds that is used for the animation.
+         * @return {Integer} Animation resolution time in milliseconds that is used for the animation.
          */
         this.getAnimationResolution = getAnimationResolution;
 
@@ -1350,7 +1350,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // Animation listeners are added here during registration.
         var _animationEventsListeners = [];
 
-        // Legend resize function is set to this memeber variable
+        // Legend resize function is set to this member variable
         // when new legends are created. By using this member variable,
         // multiple functions are not set if legends are created multiple times.
         var _legendResize;
@@ -1358,6 +1358,17 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // Keeps track of the layers that are loading data.
         // Then, progress bar can be shown accordingly.
         var _loadingLayers = [];
+
+        // Animation controller is set here during initialization.
+        var _animationController;
+        // Resize function is set to this member variable
+        // when new controller is created. By using this member variable,
+        // multiple functions are not set if controllers are created multiple times.
+        var _animationControllerResize;
+
+        // List of timeouts that should be cleared
+        // if reset occurs before timeouts finish.
+        var _resetClearTimeouts = [];
 
         // OpenLayers Animation events and corresponding callbacks.
         // Animation events are forwarded to these functions.
@@ -1423,6 +1434,18 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 value.frameChangedCb(event);
             });
         };
+
+        // Set and handle window events in this single place.
+        //---------------------------------------------------
+        jQuery(window).resize(function(e) {
+            // Use the function wrappers if they have been set.
+            if (_legendResize) {
+                _legendResize();
+            }
+            if (_animationControllerResize) {
+                _animationControllerResize();
+            }
+        });
 
         // Private functions.
         //-------------------
@@ -1789,7 +1812,12 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
             // Init scrollbar size.
             // Safari wants a timeout.
-            setTimeout(sizeScrollbar, 10);
+            var sizeScrollbarTimeout = setTimeout(function() {
+                sizeScrollbar();
+                _resetClearTimeouts.splice(_resetClearTimeouts.indexOf(sizeScrollbarTimeout), 1);
+                sizeScrollbarTimeout = undefined;
+            }, 10);
+            _resetClearTimeouts.push(sizeScrollbarTimeout);
         }
 
         /**
@@ -1799,14 +1827,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          */
         function initLegendSlider() {
             // Create the actual slider component.
+            // Notice, the window resize listener has already been set during animator construction.
             createLegendSlider();
-            // Set the resize listener.
-            jQuery(window).resize(function() {
-                // Use the function wrapper if it has been set.
-                if (_legendResize) {
-                    _legendResize();
-                }
-            });
         }
 
         /**
@@ -1937,8 +1959,10 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     if (undefined === legendTimeout) {
                         legendTimeout = setTimeout(function() {
                             setLegend(_options.legendDivId, layers);
+                            _resetClearTimeouts.splice(_resetClearTimeouts.indexOf(legendTimeout), 1);
                             legendTimeout = undefined;
                         }, 100);
+                        _resetClearTimeouts.push(legendTimeout);
                     }
                 };
                 var events = {
@@ -2047,6 +2071,17 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         }
 
         /**
+         * Remove controller from DOM.
+         */
+        function resetCtrl() {
+            if (_animationController) {
+                _animationController.remove();
+                _animationController = undefined;
+                _animationControllerResize = undefined;
+            }
+        }
+
+        /**
          * Create controller.
          *
          * This is called from {createController} function after required checks have been done.
@@ -2147,27 +2182,76 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                         }
                     };
 
-                    var ac = createCtrl(ctrls, timeModel, timeController);
+                    _animationController = createCtrl(ctrls, timeModel, timeController);
 
                     // Bind to listen for width changes in element to update
                     // controller if necessary. Width is defined as relative
                     // in CSS but height is static.
                     var width = ctrls.width();
-                    jQuery(window).resize(function(e) {
+                    // Notice, the window resize listener has already been set during animator construction.
+                    _animationControllerResize = function() {
                         var currentWidth = jQuery(ctrlSelector).width();
                         if (currentWidth !== width) {
                             width = currentWidth;
                             // Simply replace old with a new controller.
-                            ac.remove();
-                            ac = createCtrl(ctrls, timeModel, timeController);
+                            _animationController.remove();
+                            _animationController = createCtrl(ctrls, timeModel, timeController);
                         }
-                    });
+                    };
 
                     setPlayAndPause();
                 }
             }
         }
 
+        /**
+         * Remove animator structure from DOM.
+         */
+        function resetStructure() {
+            if (_options) {
+                // Notice, _options.animatorContainerDivId is not emptied here.
+                // That element is created outside of animator and may also contain
+                // some additional elements that are not part of animator. Therefore,
+                // only elements that have been created by animator are removed here.
+                if (_options.animatorContainerDivId) {
+                    // If animator container has been defined, a default structure is used.
+                    // Then, removal of the animator container will remove the whole structure.
+                    // The structure is created under animator class element during initialization.
+                    jQuery("#" + _options.animatorContainerDivId + " > .animator").remove();
+
+                } else {
+                    // Default structure is not used. Therefore, every element is removed separately.
+                    if (_options.animationDivId) {
+                        jQuery("#" + _options.animationDivId).remove();
+                    }
+                    if (_options.mapDivId) {
+                        jQuery("#" + _options.mapDivId).remove();
+                    }
+                    if (_options.layerSwitcherDivId) {
+                        jQuery("#" + _options.layerSwitcherDivId).remove();
+                    }
+                    if (_options.controllerDivId) {
+                        jQuery("#" + _options.controllerDivId).remove();
+                    }
+                    if (_options.playAndPauseDivId) {
+                        jQuery("#" + _options.playAndPauseDivId).remove();
+                    }
+                    if (_options.logoDivId) {
+                        jQuery("#" + _options.logoDivId).remove();
+                    }
+                    if (_options.legendDivId) {
+                        jQuery("#" + _options.legendDivId).remove();
+                    }
+                }
+            }
+        }
+
+        /**
+         * Create animation structure into DOM according to given {options} and update element IDs in {options}.
+         *
+         * @param {Object} options Reference to object to update ID properties for the animator elements.
+         *                         May be {undefined} or {null} but then operation is ignored.
+         */
         function createStructure(options) {
             // Default animator element structure is used and appended into container
             // if options object provides animatorContainerDivId.
@@ -2189,6 +2273,40 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         // Public functions for API.
         //--------------------------
+
+        /**
+         * See API for function description.
+         */
+        function getConfig() {
+            return _config;
+        }
+
+        /**
+         * See API for function description.
+         */
+        function reset() {
+            // Clear possible timeouts.
+            while (_resetClearTimeouts.length) {
+                clearTimeout(_resetClearTimeouts.pop());
+            }
+
+            // Empty arrays.
+            _animationEventsListeners = [];
+            _loadingLayers = [];
+
+            // Reset member variables.
+            _requestAnimationTime = undefined;
+            _currentTime = undefined;
+            _legendResize = undefined;
+
+            // Reset the DOM structure.
+            resetStructure();
+            resetCtrl();
+
+            // Reset options and configurations.
+            _config = undefined;
+            _options = undefined;
+        }
 
         /**
          * See API for function description.
@@ -2217,6 +2335,9 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         /**
          * Initialize animator with given options.
+         *
+         * Notice, if animator should be reinitialized with new configuration,
+         * {reset} should be called before calling {init} again.
          *
          * Default animator element structure is used and appended into container
          * if options object provides {animatorContainerDivId}.
@@ -2268,6 +2389,28 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          * @return {this} Reference to this This instance.
          */
         this.init = init;
+
+        /**
+         * Release existing animator content that has previously been initialized by {init}.
+         *
+         * Notice, animator needs to be initialized after reset by calling {init} if animator
+         * should have and show new content.
+         */
+        this.reset = reset;
+
+        /**
+         * Getter for configuration API object.
+         *
+         * Configuration API provides getter functions for animation configurations and also for
+         * {OpenLayers} components. Then, for example, animation {OpenLayers.Map} is available
+         * via the API.
+         *
+         * See, {fi.fmi.metoclient.ui.animator.Factory} API for more detailed description.
+         *
+         * @return {Object} Configuration API object.
+         *                  May be {undefined} if animator has not been initialized by calling {init}.
+         */
+        this.getConfig = getConfig;
 
     };
 
