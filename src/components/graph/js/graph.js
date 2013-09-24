@@ -76,8 +76,9 @@ fi.fmi.metoclient.ui.graph.Graph = (function() {
      * @return {*} Color.
      */
     function getParameterColor(index) {
+        var colorValues = [
         // Currently these colors correspond to London Underground lines.
-        var colorValues = ["#9B4F19", // Bakerloo
+        "#9B4F19", // Bakerloo
         "#D81E05", // Central
         "#FCD116", // Circle
         "#007A3D", // District
