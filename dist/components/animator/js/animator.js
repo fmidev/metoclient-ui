@@ -109,19 +109,15 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
      * Constructor for new instatiation.
      * This function provides the public API and also contains private instance specific functionality.
      *
-     * @param {Object} options Contains config factory specific options.
-     *                         For example, configuration object that contains map and layer configurations
-     *                         may be given directly here as {options.config} object. Then, default config object,
-     *                         {fi.fmi.metoclient.ui.animator.Config}, is not used. May be {undefined} or {null}.
+     * @param {Object} configuration Map and layer configuration object.
+     *                               May be {undefined} or {null} but then operations are ignored.
      */
-    var _constructor = function(options) {
+    var _constructor = function(configuration) {
         // Private member variables.
         //--------------------------
 
-        /**
-         * Configuration object that contains map and layer configurations.
-         */
-        var _config = options && options.config ? options.config : fi.fmi.metoclient.ui.animator.Config;
+        // Map and layer configuration object.
+        var _config = configuration;
 
         // OpenLayers related map and layers variables.
         // See corresponding get funtions below to create content.
@@ -181,7 +177,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                     for (var i = 0, len = nameArr.length; i < len; i++) {
                         constructor = constructor[nameArr[i]];
                     }
-                    if ( typeof constructor === "function") {
+                    if ("function" === typeof constructor) {
                         // Function was successfully created.
                         // Create instance with the given arguments.
                         // Notice, parentheses are required around wrapper function.
@@ -425,6 +421,9 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
             return _config ? _config.animationFrameRate : undefined;
         }
 
+        /**
+         * See API for function description.
+         */
         function getAnimationResolution() {
             // Set resolution once.
             if (_resolution === undefined) {
@@ -1282,6 +1281,11 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
 
 // "use strict";
 
+// Requires lodash
+if ("undefined" === typeof _ || !_) {
+    throw "ERROR: Lodash is required for fi.fmi.metoclient.ui.animator.Animator!";
+}
+
 // Requires jQuery
 if ("undefined" === typeof jQuery || !jQuery) {
     throw "ERROR: jQuery is required for fi.fmi.metoclient.ui.animator.Animator!";
@@ -1323,6 +1327,22 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // Use OpenLayers events as a controller and this singleton object as its container.
         events : new OpenLayers.Events(this)
     };
+
+    /**
+     * Deep clone callback function for lodash.
+     *
+     * Same clone function for all the Animator instances.
+     *
+     * @param value Value that should be deep cloned.
+     * @return Clone value. {undefined} if lodash should handle value.
+     */
+    function cloneDeepCallback(value) {
+        var cloneValue;
+        if (_.isObject(value) && _.isFunction(value.clone)) {
+            cloneValue = value.clone();
+        }
+        return cloneValue;
+    }
 
     /**
      * Constructor for the instance.
@@ -1642,7 +1662,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          * See, {firePlay} and {firePause} functions.
          */
         function playAnimation() {
-            if (_requestAnimationTime !== undefined) {
+            if (_requestAnimationTime !== undefined && _config) {
                 // Loop this until stopped
                 requestAnimationFrame(playAnimation);
                 // Request animation loops at certain vague frame rate.
@@ -1983,6 +2003,36 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         }
 
         /**
+         * Set OpenLayers layer switcher.
+         */
+        function setupSwitcher(map, layerSwitcherDivId, maximizeSwitcher) {
+            if (map) {
+                var layerSwitcherOptions;
+                if (layerSwitcherDivId) {
+                    layerSwitcherOptions = {
+                        div : OpenLayers.Util.getElement(layerSwitcherDivId)
+                    };
+                }
+
+                // Create switcher by using the given options
+                // that may contain div that exists outside of the map.
+                var switcher = new OpenLayers.Control.LayerSwitcher(layerSwitcherOptions);
+
+                map.addControl(switcher);
+
+                if (!maximizeSwitcher) {
+                    // Make sure switcher is minimized in the beginning.
+                    switcher.minimizeControl();
+                }
+
+                // Notice, there is no need to handle maximize and minimize separately here.
+                // OpenLayers handles it automatically, but .maximizeDiv and .minimizeDiv needs
+                // to be set properly in css to make this work. Especially, .maximizeDiv should be
+                // set properly outside of the map div to make it show.
+            }
+        }
+
+        /**
          * Set given layers into the map.
          * Also, register layers and controller to listen events.
          *
@@ -2034,39 +2084,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     }
                     // Zoom the map after layers have been inserted.
                     map.setCenter(map.getCenter(), _config.getDefaultZoomLevel());
-
                     setupSwitcher(map, _options.layerSwitcherDivId, _options.maximizeSwitcher);
                 }
-            }
-        }
-
-        /**
-         * Set OpenLayers layer switcher.
-         */
-        function setupSwitcher(map, layerSwitcherDivId, maximizeSwitcher) {
-            if (map) {
-                var layerSwitcherOptions;
-                if (layerSwitcherDivId) {
-                    layerSwitcherOptions = {
-                        div : OpenLayers.Util.getElement(layerSwitcherDivId)
-                    };
-                }
-
-                // Create switcher by using the given options
-                // that may contain div that exists outside of the map.
-                var switcher = new OpenLayers.Control.LayerSwitcher(layerSwitcherOptions);
-
-                map.addControl(switcher);
-
-                if (!maximizeSwitcher) {
-                    // Make sure switcher is minimized in the beginning.
-                    switcher.minimizeControl();
-                }
-
-                // Notice, there is no need to handle maximize and minimize separately here.
-                // OpenLayers handles it automatically, but .maximizeDiv and .minimizeDiv needs
-                // to be set properly in css to make this work. Especially, .maximizeDiv should be
-                // set properly outside of the map div to make it show.
             }
         }
 
@@ -2285,6 +2304,15 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          * See API for function description.
          */
         function reset() {
+            if (_config) {
+                var map = _config.getMap();
+                if (map) {
+                    // Notice, map needs to be destroyed
+                    // before container is removed from DOM.
+                    map.destroy();
+                }
+            }
+
             // Clear possible timeouts.
             while (_resetClearTimeouts.length) {
                 clearTimeout(_resetClearTimeouts.pop());
@@ -2315,7 +2343,9 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             if (!_options && options) {
                 // Set options and create config only once.
                 _options = options;
-                _config = new fi.fmi.metoclient.ui.animator.Factory(options.config);
+                // Configuration object is deep cloned here.
+                // Then, if properties are changed during the flow, the content of the original object is not changed.
+                _config = new fi.fmi.metoclient.ui.animator.Factory(_.cloneDeep(options.config || fi.fmi.metoclient.ui.animator.Config, cloneDeepCallback));
 
                 // Create animation structure for the content.
                 createStructure(options);

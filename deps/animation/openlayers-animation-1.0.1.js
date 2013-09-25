@@ -414,10 +414,13 @@ OpenLayers.Layer.Animation = OpenLayers.Class(OpenLayers.Layer, {
             }
             // Trigger event asynchronously.
             setTimeout(function() {
-                // Trigger event in OpenLayers style.
-                // Then listeners that have registered for this layer
-                // for this event will be informed.
-                _me.events.triggerEvent(eventName, animationEvent);
+                // Events may not exist if map has been destroyed.
+                if (_me.events) {
+                    // Trigger event in OpenLayers style.
+                    // Then listeners that have registered for this layer
+                    // for this event will be informed.
+                    _me.events.triggerEvent(eventName, animationEvent);
+                }
             }, 0);
         };
 
@@ -2644,7 +2647,8 @@ OpenLayers.Layer.Animation.LayerContainer = OpenLayers.Class({
 
         var setMap = function(map) {
             if (_map !== map) {
-                if (_map) {
+                // Events may not exist if map has been destroyed.
+                if (_map && _map.events) {
                     // Unregister possible previously registered events for the old map.
                     _map.events.un(_mapEvents);
                 }
@@ -3427,40 +3431,50 @@ OpenLayers.Layer.Animation.LayerObject = OpenLayers.Class({
         };
 
         var releaseContent = function() {
-            var map = _layer ? _layer.map : undefined;
-            if (map) {
-                map.removeLayer(_layer);
+            var layerMap = _layer ? _layer.map : undefined;
+            // Events do not exist if map has been destroyed.
+            // Remove layer from the map by hand here only if
+            // map is in initialized state.
+            if (layerMap && layerMap.events) {
+                layerMap.removeLayer(_layer);
             }
             _layer = undefined;
             resetState();
         };
 
         var loadLayer = function() {
-            // Create and insert into a correct position in array.
-            if (!_layer) {
-                // Notice, if configuration is given in a wrong way,
-                // layer may not be created.
-                _layer = createLayer();
-                if (_layer) {
-                    // Register to listen events.
-                    _layer.events.on(_events);
+            // Events do not exist if map has been destroyed.
+            // Load layers only if map is in initialized state.
+            if (map.events) {
+                // Create and insert into a correct position in array.
+                if (!_layer) {
+                    // Notice, if configuration is given in a wrong way,
+                    // layer may not be created.
+                    _layer = createLayer();
+                    if (_layer) {
+                        // Register to listen events.
+                        _layer.events.on(_events);
+                    }
                 }
-            }
-            if (_layer) {
-                if (!_layer.map) {
-                    // Add layer into the map if it is not already there.
-                    // Notice, layer contains information about the map where it has been added to.
-                    // If layer has been removed, its map is also set to null.
-                    _state.id = _STATE_PRE_LOADING;
-                    map.addLayer(_layer);
-                }
-                // Layer is now part of the map in all cases.
-                // Also, make sure that it is set visible if necessary.
-                // Notice, if visibility is changed from false to true,
-                // layer load is started automatically.
-                if (!_layer.visibility) {
-                    _state.id = _STATE_PRE_LOADING;
-                    setVisibility(true);
+                // Layer div is created during layer initialization.
+                // Make sure div is available to be sure that map has not been
+                // destroyed during zoom operation. Layer div is removed if map is destroyed.
+                if (_layer && _layer.div) {
+                    if (!_layer.map) {
+                        // Add layer into the map if it is not already there.
+                        // Notice, layer contains information about the map where it has been added to.
+                        // If layer has been removed, its map is also set to null.
+                        _state.id = _STATE_PRE_LOADING;
+                        map.addLayer(_layer);
+                    }
+                    // Layer is now part of the map in all cases.
+                    // Also, make sure that it is set visible if necessary.
+                    // Notice, if visibility is changed from false to true,
+                    // layer load is started automatically.
+                    if (!_layer.visibility) {
+                        _state.id = _STATE_PRE_LOADING;
+                        setVisibility(true);
+                    }
                 }
             }
         };
@@ -3557,7 +3571,11 @@ OpenLayers.Layer.Animation.LayerObject = OpenLayers.Class({
                     // Reset state because layer needs to be loaded after this.
                     resetState();
                 }
-                _layer.setVisibility(visibility);
+                // Set layer visibility only if layer belongs to map.
+                // Layer may have been removed if map has been destroyed.
+                if (_layer.map) {
+                    _layer.setVisibility(visibility);
+                }
             }
         };
 
@@ -3566,7 +3584,7 @@ OpenLayers.Layer.Animation.LayerObject = OpenLayers.Class({
         };
 
         var setZIndex = function(index) {
-            if (index !== undefined && index !== null && !isNaN(index) && _layer) {
+            if (index !== undefined && index !== null && !isNaN(index) && _layer && _layer.map) {
                 _layer.setZIndex(index);
             }
         };
@@ -3576,7 +3594,7 @@ OpenLayers.Layer.Animation.LayerObject = OpenLayers.Class({
         };
 
         var setOpacity = function(opacity) {
-            if (_layer) {
+            if (_layer && _layer.map) {
                 _layer.setOpacity(opacity);
             }
         };

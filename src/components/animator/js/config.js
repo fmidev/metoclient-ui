@@ -351,7 +351,7 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // Load automatically when layer is added to the map.
                 autoLoad : true
             },
-            // Do not select this layer as default in layer switcher.
+            // Select this layer as default in layer switcher.
             // Notice, autoload above has no effect if this is false.
             visibility : true
         }]

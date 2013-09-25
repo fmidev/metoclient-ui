@@ -106,19 +106,15 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
      * Constructor for new instatiation.
      * This function provides the public API and also contains private instance specific functionality.
      *
-     * @param {Object} options Contains config factory specific options.
-     *                         For example, configuration object that contains map and layer configurations
-     *                         may be given directly here as {options.config} object. Then, default config object,
-     *                         {fi.fmi.metoclient.ui.animator.Config}, is not used. May be {undefined} or {null}.
+     * @param {Object} configuration Map and layer configuration object.
+     *                               May be {undefined} or {null} but then operations are ignored.
      */
-    var _constructor = function(options) {
+    var _constructor = function(configuration) {
         // Private member variables.
         //--------------------------
 
-        /**
-         * Configuration object that contains map and layer configurations.
-         */
-        var _config = options && options.config ? options.config : fi.fmi.metoclient.ui.animator.Config;
+        // Map and layer configuration object.
+        var _config = configuration;
 
         // OpenLayers related map and layers variables.
         // See corresponding get funtions below to create content.
@@ -178,7 +174,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                     for (var i = 0, len = nameArr.length; i < len; i++) {
                         constructor = constructor[nameArr[i]];
                     }
-                    if ( typeof constructor === "function") {
+                    if ("function" === typeof constructor) {
                         // Function was successfully created.
                         // Create instance with the given arguments.
                         // Notice, parentheses are required around wrapper function.
@@ -422,6 +418,9 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
             return _config ? _config.animationFrameRate : undefined;
         }
 
+        /**
+         * See API for function description.
+         */
         function getAnimationResolution() {
             // Set resolution once.
             if (_resolution === undefined) {
