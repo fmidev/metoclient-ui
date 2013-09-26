@@ -174,7 +174,10 @@ fi.fmi.metoclient.ui.animator.Config = {
                     layer : "Weather:precipitation-forecast",
                     // Forecasts are future data. So, begin time is from now.
                     // Notice, beginTime is floored down to the nearest resolution.
-                    beginTime : new Date(),
+                    // Therefore, the date time is increased by ( resolution time - 1 )
+                    // to make sure that the floored beginTime refers to the future and
+                    // is on the proper resolution.
+                    beginTime : (new Date()).getTime() + 60 * 60 * 1000 - 1,
                     // End time is not required if layer is meant for all times after beginTime.
                     endTime : undefined,
                     // Legend configuration is inherited from the parent animation object.
@@ -246,9 +249,10 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // Notice, unnecessary empty layer data is not requested
                 // from the server when end time is defined here.
                 // Also notice, endTime is ceiled on the next resolution time.
-                // Therefore, last value may be a forecast if server provides
-                // that kind of data.
-                endTime : new Date(),
+                // Therefore, the date time is decreased by ( resolution time - 1 )
+                // to make sure endTime refers to the observation and is on the
+                // proper resolution.
+                endTime : (new Date()).getTime() - (2 * 60 * 60 * 1000 - 1),
                 // Fade-in may also be configured for animation if default is not good enough.
                 fadeIn : {
                     // For an example, fade-in time is set longer for this animation layer. Resolution
