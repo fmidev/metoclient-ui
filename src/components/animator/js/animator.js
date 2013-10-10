@@ -441,7 +441,11 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 // Set the thumbnail image to view for bigger area.
                 view.css("background-image", item.css("background-image"));
             }
-            var prevContentContainerWidth = contentContainer.width();
+            // Content container width is zero before first element is included in it.
+            // Initial container width is increased a little bit here. Then, container
+            // width has some flexibility in it and it is wide enough for floating elements
+            // in all cases.
+            var prevContentContainerWidth = contentContainer.width() || 2;
             // Append item to container before checking widths.
             // Then, width query gives a proper result for new dimensions.
             contentContainer.append(item);
