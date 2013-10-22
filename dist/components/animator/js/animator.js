@@ -1457,6 +1457,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         // Set and handle window events in this single place.
         //---------------------------------------------------
+
         jQuery(window).resize(function(e) {
             // Use the function wrappers if they have been set.
             if (_legendResize) {
@@ -1469,6 +1470,27 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         // Private functions.
         //-------------------
+
+        // Utils functions.
+        //-----------------
+
+        /**
+         * Create debounce function from the given function.
+         *
+         * @param {Function} f Function for debounce.
+         *                     May be {undefined} or {null}.
+         * @return {Function} Debounce function.
+         *                    May be {undefined} if {f} is not a function.
+         */
+        function createDebounce(f) {
+            var debounce;
+            if (_.isFunction(f)) {
+                debounce = _.debounce(f, 10, {
+                    maxWait : 100
+                });
+            }
+            return debounce;
+        }
 
         // Functions that handle events.
         //------------------------------
@@ -1827,12 +1849,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
             // Define new resize function because new slider is initialized.
             // Member variable is used to avoid multiple resizes if slider is recreated.
-            _legendResize = function() {
+            // Use debounce to limit frequency of component redraw operations.
+            _legendResize = createDebounce(function() {
                 // Change handle position on window resize.
                 resetValue();
                 reflowContent();
                 sizeScrollbar();
-            };
+            });
 
             // Init scrollbar size.
             // Safari wants a timeout.
@@ -2212,7 +2235,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     // in CSS but height is static.
                     var width = ctrls.width();
                     // Notice, the window resize listener has already been set during animator construction.
-                    _animationControllerResize = function() {
+                    // Use debounce to limit frequency of component redraw operations.
+                    _animationControllerResize = createDebounce(function() {
                         var currentWidth = jQuery(ctrlSelector).width();
                         if (currentWidth !== width) {
                             width = currentWidth;
@@ -2220,7 +2244,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                             _animationController.remove();
                             _animationController = createCtrl(ctrls, timeModel, timeController);
                         }
-                    };
+                    });
 
                     setPlayAndPause();
                 }
@@ -2302,6 +2326,18 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          */
         function getConfig() {
             return _config;
+        }
+
+        /**
+         * See API for function description.
+         */
+        function refresh() {
+            // Handle refresh operation same way as window resize event.
+            // Notice, jQuery does not seem to provide easy way to listen for
+            // resize events targeted directly to div-elements. Therefore,
+            // corresponding event is launched here by a separate call to
+            // make sure all the necessary components are resized if necessary.
+            jQuery(window).resize();
         }
 
         /**
@@ -2431,6 +2467,18 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          * should have and show new content.
          */
         this.reset = reset;
+
+        /**
+         * Refresh animator components.
+         *
+         * This function is provided to make sure that all the animator components, such as
+         * the animation controller, are resized properly if container dimensions are changed.
+         *
+         * Notice, window resize is handled automatically. But, this function needs to be called
+         * if animator elements are resized separately and window resize event is not launched.
+         * Then, operations corresponding to window resize can be triggered by using this function.
+         */
+        this.refresh = refresh;
 
         /**
          * Getter for configuration API object.
