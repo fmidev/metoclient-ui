@@ -221,16 +221,50 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         /**
+         * Transform slider set elements by given delta.
+         *
+         * @param {Integer} deltaX Delta value for transform movement
+         *                         in x-axis direction for slider set elements.
+         *                         May not be {undefined} or {null}.
+         */
+        function transformSliderElements(deltaX) {
+            // RegExp corresponding movement transform string.
+            var transformRegExp = /T-*\d+,0/;
+            // Handle transform of each element in slider set separately.
+            _slider.forEach(function(e) {
+                // Get the current transform string of the element.
+                var previousTransform = e.transform().toString();
+                // Check if the movement transform has been defined before.
+                var previousTransformMatch = previousTransform.match(transformRegExp);
+                if (previousTransformMatch && previousTransformMatch.length) {
+                    // Element has been moved before because movement transform string was found.
+                    // There should be only one match. Get the previous movement deltaX value from
+                    // the first match string. Notice, skip T-character from the string before parsing
+                    // the integer value from the string.
+                    var previousValue = parseInt(previousTransformMatch[0].substring(1), 10);
+                    // Set new transform deltaX into the elment transform string.
+                    e.transform(previousTransform.replace(transformRegExp, "T" + (previousValue + deltaX) + ",0"));
+
+                } else {
+                    // Element has not been moved before.
+                    // But, transform may still contain data.
+                    // Append movement transform string for element.
+                    e.transform("...T" + deltaX + ",0");
+                }
+            });
+        }
+
+        /**
          * @param {Integer} x X position relative to the window origin.
          *                    Notice, x should refer to new x position of the
          *                    left side of slider.
          */
         function moveSliderTo(x) {
-            var delta = x - jQuery(_sliderBg.node).offset().left;
+            var delta = Math.round(x - jQuery(_sliderBg.node).offset().left);
             var newTipX = x + _sliderConfig.sliderTipDx;
             var scaleX = getScaleAreaOffsetX();
             if (delta && newTipX >= scaleX && newTipX <= scaleX + getScaleAreaWidth()) {
-                _slider.transform("...T" + delta + ",0");
+                transformSliderElements(delta);
                 resetSliderLabelText();
                 resetHotSpots();
             }
