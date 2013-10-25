@@ -31,7 +31,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
      * This will provide IE8+ support.
      * See, https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
      *
-     * This function is called during the construction of this sigleton instance to make sure
+     * This function is called during the construction of this singleton instance to make sure
      * function is available.
      */
     (function() {
@@ -103,7 +103,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
     }
 
     /**
-     * Constructor for new instatiation.
+     * Constructor for new instance.
      * This function provides the public API and also contains private instance specific functionality.
      *
      * @param {Object} configuration Map and layer configuration object.
@@ -117,12 +117,12 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         var _config = configuration;
 
         // OpenLayers related map and layers variables.
-        // See corresponding get funtions below to create content.
+        // See corresponding get functions below to create content.
         var _map;
         var _layers = [];
 
         // Animation setting related variables that are initialized
-        // when corresponding get functionas are called first time.
+        // when corresponding get functions are called first time.
         var _resolution;
         var _beginDate;
         var _endDate;
@@ -131,15 +131,15 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         //--------------------------
 
         /**
-         * Creates a constuctor wrapper function that may be instantiated with {new}.
+         * Creates a constructor wrapper function that may be instantiated with {new}.
          *
          * @param {Function} constructor Constructor function.
-         *                               Operaion ignored if {undefined} or {null}.
+         *                               Operation ignored if {undefined} or {null}.
          * @param {Array} args Arguments array that contains arguments that are given for the constructor.
          *                     May be {undefined} or {null}.
          * @return {Function} Wrapper function for constructor with given arguments.
          *                    This can be used with {new} to instantiate.
-         *                    Notice, returned funtion needs to be surrounded with parentheses when {new} is used.
+         *                    Notice, returned function needs to be surrounded with parentheses when {new} is used.
          *                    For example, new (constructorWrapper(constructor, args));
          */
         var constructorWrapper = function(constructor, args) {
@@ -561,7 +561,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * This gives only time for the whole animation.
          *
          * @return {Date} Default value for animation begin time.
-         *                If configuraton provides the value, it is used.
+         *                If configuration provides the value, it is used.
          *                Notice, date is floored to the nearest animation resolution time if
          *                time and resolution are given in configuration.
          *                May be {undefined} if not set in configuration.
@@ -574,7 +574,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * This gives only time for the whole animation.
          *
          * @return {Date} Default value for animation end time.
-         *                If configuraton provides the value, it is used.
+         *                If configuration provides the value, it is used.
          *                Notice, date is ceiled to the nearest animation resolution time if
          *                time and resolution are given in configuration.
          *                May be {undefined} if not set in configuration.
