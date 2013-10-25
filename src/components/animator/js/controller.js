@@ -17,6 +17,7 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  */
 fi.fmi.metoclient.ui.animator.Controller = (function() {
 
+    var createCanvas = Raphael;
     var _labelFontFamily = "Arial";
     var _labelFontSize = 12;
 
@@ -38,271 +39,40 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
      */
     var _constructor = function(element, width, height) {
         var that = this;
-        var _paper = new Raphael(element, width, height);
+
+        // See init function for member variable initializations and descriptions.
+
+        // Controller member variables.
+        //-----------------------------
+        var _paper;
         var _model;
         var _timeController;
+        var _scaleConfig;
+        var _sliderConfig;
 
-        // Initialization configurations.
-        var _scaleConfig = {
-            // Corner radius.
-            radius : 5,
-            x : 0,
-            y : 0,
-            width : width,
-            height : height - 35,
-            bgColor : Raphael.rgb(88, 88, 88),
-            cellReadyColor : Raphael.rgb(148, 191, 119),
-            cellErrorColor : Raphael.rgb(154, 37, 0),
-            cellLoadingColor : Raphael.rgb(148, 191, 191),
-            strokeBgColor : Raphael.rgb(191, 191, 191),
-            obsBgColor : Raphael.rgb(178, 216, 234),
-            fctBgColor : Raphael.rgb(231, 166, 78)
-        };
-        _scaleConfig.bgHeight = Math.floor(2 * _scaleConfig.height / 3);
-        // Make progress cell height a little bit smaller than remaining area.
-        // Then, background color is shown a little bit in behind.
-        _scaleConfig.progressCellHeight = _scaleConfig.height - _scaleConfig.bgHeight - 2;
+        // Scale member variables.
+        //------------------------
 
-        var _sliderConfig = {
-            height : 30,
-            width : 65,
-            bgColor : Raphael.rgb(88, 88, 88),
-            strokeBgColor : Raphael.rgb(191, 191, 191)
-        };
-        // Notice, that polygon is drawn by using path. See, _sliderBg variable.
-        // Notice, the polygon path height is 7 and tip height is 3. Therefore, use corresponding ration here.
-        _sliderConfig.sliderTipHeight = _sliderConfig.height * (3 / 7);
-        // Polygon path width is 14. Scale to the width given here.
-        _sliderConfig.scaleX = _sliderConfig.width / 14;
-        _sliderConfig.scaleY = (_sliderConfig.height + _sliderConfig.sliderTipHeight) / 7;
-        // The tip x position is 4 in the plygon path. So, use that with the scale.
-        _sliderConfig.sliderTipDx = Math.floor(4 * _sliderConfig.scaleX);
-        // Make slider overlap the scale a little bit.
-        _sliderConfig.y = _scaleConfig.y + _scaleConfig.height - Math.floor(_sliderConfig.sliderTipHeight / 3);
+        var _tickSet;
+        var _progressCellSet;
+        var _scaleContainer;
+        var _background;
+        var _obsBackground;
+        var _fctBackground;
+        var _leftHotSpot;
+        var _rightHotSpot;
 
-        // Scale functions that are required for scale initializations.
-        //-------------------------------------------------------------
+        // Slider member variables.
+        //-------------------------
 
-        /**
-         * This is required to make sure slider is not hidden when it is in the side.
-         * This happends if it is outside of the paper. Therefore, use padding that
-         * takes this into account.
-         */
-        function getScalePadding() {
-            // Notice, exact value can be calculated by _sliderConfig.width - _sliderConfig.sliderTipDx.
-            // But it may be better to use constant. Then, for example UI CSS desing may be easier to do if
-            // values are constants.
-            return 50;
-        }
-
-        function nextFrame() {
-            _timeController.proposeNextFrame();
-        }
-
-        function previousFrame() {
-            _timeController.proposePreviousFrame();
-        }
-
-        // Handle mouse scroll event.
-        function handleMouseScroll(e) {
-            if (e.originalEvent.wheelDelta > 0) {
-                // Scrolling up.
-                nextFrame();
-
-            } else {
-                // Scrolling down.
-                previousFrame();
-            }
-            // Prevent scrolling of the page.
-            e.preventDefault();
-        }
-
-        function getObsWidth() {
-            var width = 0;
-            if (getForecastStartTime()) {
-                // Forecast start time is given. So, calculate the width.
-                width = _model && Math.floor((getEndTime() - getStartTime()) ? getScaleAreaWidth() * (getForecastStartTime() - getStartTime()) / (getEndTime() - getStartTime()) : 0);
-
-            } else {
-                // Observation takes the whole scale width if forecast is not used.
-                width = getScaleAreaWidth();
-            }
-            if (width < 0) {
-                width = 0;
-            }
-            return width;
-        }
-
-        function getFctWidth() {
-            var width = _model ? getScaleAreaWidth() - getObsWidth() : 0;
-            if (width < 0) {
-                width = 0;
-            }
-            return width;
-        }
-
-        /**
-         * @return X relative to the window.
-         */
-        function getScaleAreaOffsetX() {
-            return jQuery(_scaleContainer.node).offset().left + getScalePadding();
-        }
-
-        // Scale initializations.
-        //-----------------------
-
-        // Scale variables.
-        // Collection of scale tick elements.
-        var _tickSet = _paper.set();
-        // Colleciton of progress cell elements.
-        var _progressCellSet = _paper.set();
-
-        // Create scale UI components.
-        // Scale container is used in the background of the scale elements.
-        // Its purpose is just to provide information about the area and its position.
-        var _scaleContainer = _paper.rect(_scaleConfig.x, _scaleConfig.y, _scaleConfig.width, _scaleConfig.height, _scaleConfig.radius);
-        _scaleContainer.attr('fill', _scaleConfig.bgColor);
-        _scaleContainer.attr('stroke', _scaleConfig.strokeBgColor);
-        // Keep it hidden in the background.
-        _scaleContainer.attr('opacity', 0);
-
-        // Background behind obs and fct.
-        var _background = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getObsWidth() + getFctWidth(), _scaleConfig.height);
-        _background.attr('fill', _scaleConfig.bgColor);
-        _background.attr('stroke-width', 0);
-
-        var _obsBackground = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getObsWidth(), _scaleConfig.bgHeight);
-        _obsBackground.attr('fill', _scaleConfig.obsBgColor);
-        _obsBackground.attr('stroke-width', 0);
-
-        var _fctBackground = _paper.rect(_scaleConfig.x + getScalePadding() + getObsWidth(), _scaleConfig.y, getFctWidth(), _scaleConfig.bgHeight);
-        _fctBackground.attr('fill', _scaleConfig.fctBgColor);
-        _fctBackground.attr('stroke-width', 0);
-
-        var _leftHotSpot = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getScalePadding(), _scaleConfig.height);
-        // Fill is required. Otherwise, click does not work.
-        _leftHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
-        _leftHotSpot.click(previousFrame);
-
-        var _rightHotSpot = _paper.rect(_scaleConfig.x + width - 2 * getScalePadding(), _scaleConfig.y, getScalePadding(), _scaleConfig.height);
-        // Fill is required. Otherwise, click does not work.
-        _rightHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
-        _rightHotSpot.click(nextFrame);
-
-        // Handle mouse wheel over the scale.
-        jQuery([_scaleContainer.node, _background.node, _obsBackground.node, _fctBackground.node, _leftHotSpot.node, _rightHotSpot.node]).bind('mousewheel', handleMouseScroll);
-
-        // Slider functions that are required for slider initializations.
-        //---------------------------------------------------------------
-
-        /**
-         * Set label text according to the position of the slider.
-         */
-        function resetSliderLabelText() {
-            var x = jQuery(_sliderBg.node).offset().left;
-            var date = new Date(timeToResolution(posToTime(x)));
-            _sliderLabel.attr('text', getTimeStr(date));
-        }
-
-        /**
-         * @param {Integer} x X position relative to the window origin.
-         *                    Notice, x should refere to new x position of the
-         *                    left side of slider.
-         */
-        function moveSliderTo(x) {
-            var delta = x - jQuery(_sliderBg.node).offset().left;
-            var newTipX = x + _sliderConfig.sliderTipDx;
-            var scaleX = getScaleAreaOffsetX();
-            if (delta && newTipX >= scaleX && newTipX <= scaleX + getScaleAreaWidth()) {
-                _slider.transform("...T" + delta + ",0");
-                resetSliderLabelText();
-                resetHotSpots();
-            }
-        }
-
-        // Slider drag flow callback functions are required for slider initializations.
-        //-----------------------------------------------------------------------------
-
-        /**
-         * @param x X position of the mouse.
-         * @param y Y position of the mouse.
-         * @param event DOM event object.
-         */
-        function startDragMove(x, y, event) {
-            _timeController.proposePause();
-            _dragStartX = jQuery(_sliderBg.node).offset().left;
-        }
-
-        /**
-         * @param dx shift by x from the start point
-         * @param dy shift by y from the start point
-         * @param x X position of the mouse.
-         * @param y Y position of the mouse.
-         * @param event DOM event object.
-         */
-        function dragMove(dx, dy, x, y, event) {
-            // Notice, the given x is the position of the mouse,
-            // not the exact position of the left side of the slider.
-            // Also, dx is relative to the drag start position, not
-            // to the previous  movement.
-            var newTime = posToTime(_dragStartX + dx);
-            _timeController.proposeTimeSelectionChange(newTime);
-        }
-
-        /**
-         * @param event DOM event object.
-         */
-        function finalizeDragMove(event) {
-            _dragStartX = undefined;
-        }
-
-        // Slider initalizations.
-        //-----------------------
-
-        // Collects all the slider elements.
-        var _slider = _paper.set();
+        var _slider;
+        var _sliderBg;
+        var _sliderLabel;
         // This is updated when slider is dragged.
         var _dragStartX;
 
-        //polygon:
-        var _sliderBg = _paper.path("M0,2L0,7L14,7L14,2L6,2L4,0L2,2Z");
-        _sliderBg.attr('fill', _sliderConfig.bgColor);
-        _sliderBg.attr('stroke', _sliderConfig.strokeBgColor);
-        _sliderBg.transform("S" + _sliderConfig.scaleX + "," + _sliderConfig.scaleY + ",0,0T0," + _sliderConfig.y);
-
-        var _sliderLabel = _paper.text(32, _sliderConfig.y + 26, "00:00").attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize).attr("fill", Raphael.rgb(191, 191, 191));
-
-        _slider.push(_sliderBg);
-        _slider.push(_sliderLabel);
-
-        // Set drag handlers.
-        _slider.drag(dragMove, startDragMove, finalizeDragMove, this, this, this);
-
-        // Reset initial time for label.
-        resetSliderLabelText();
-
-        // Handle mouse wheel over the slider.
-        jQuery([_sliderBg.node, _sliderLabel.node]).bind('mousewheel', handleMouseScroll);
-
-        // Move slider to the initial position.
-        // Notice, because this is the first move, use also _sliderConfig.sliderTipDx to set tip position to the beginning.
-        // Otherwise, left side should be given.
-        moveSliderTo(getScaleAreaOffsetX() - _sliderConfig.sliderTipDx);
-
-        // Private functions.
-        //-------------------
-
-        // Redraw scale and slider elements.
-        function redrawAll() {
-            redrawScaleBackground();
-            redrawTimeCells();
-            redrawTics();
-            redrawSlider();
-            resetHotSpots();
-            // Make sure hot spots are in front.
-            _leftHotSpot.toFront();
-            _rightHotSpot.toFront();
-        }
+        // Private controller functions.
+        //------------------------------
 
         function resetHotSpots() {
             var sliderTipOffsetX = jQuery(_sliderBg.node).offset().left + _sliderConfig.sliderTipDx;
@@ -322,15 +92,67 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _rightHotSpot.attr("x", _leftHotSpot.attr("x") + leftWidth).attr("width", rightWidth);
         }
 
+        // Private model and element information functions.
+        //-------------------------------------------------
+
+        /**
+         * This is required to make sure slider is not hidden when it is in the side.
+         * This happends if it is outside of the paper. Therefore, use padding that
+         * takes this into account.
+         */
+        function getScalePadding() {
+            // Notice, exact value can be calculated by _sliderConfig.width - _sliderConfig.sliderTipDx.
+            // But it may be better to use constant. Then, for example UI CSS design may be easier to do if
+            // values are constants.
+            return 50;
+        }
+
+        function getForecastStartTime() {
+            return _model ? _model.getForecastStartTime() : 0;
+        }
+
+        function getStartTime() {
+            return _model ? _model.getStartTime() : 0;
+        }
+
+        function getEndTime() {
+            return _model ? _model.getEndTime() : 0;
+        }
+
+        function getResolution() {
+            return _model ? _model.getResolution() : 0;
+        }
+
+        /**
+         * @return X relative to the parent, not necessary a window.
+         */
+        function getScaleAreaX() {
+            return _scaleContainer.getBBox().x + getScalePadding();
+        }
+
+        /**
+         * @return Y relative to the parent, not necessary a window.
+         */
+        function getScaleAreaY() {
+            return _scaleContainer.getBBox().y;
+        }
+
+        function getScaleAreaWidth() {
+            return Math.floor(_scaleConfig.width - 2 * getScalePadding());
+        }
+
+        function getScaleAreaHeight() {
+            return Math.floor(_scaleContainer.getBBox().height);
+        }
+
+        function getTimeScale() {
+            return _model && getScaleAreaWidth() ? (_model.getEndTime() - _model.getStartTime()) / getScaleAreaWidth() : 1;
+        }
+
         // Private slider functions.
         //--------------------------
 
-        function redrawSlider() {
-            _slider.toFront();
-            resetSliderLabelText();
-        }
-
-        // Position and time converted functions for slider.
+        // Position and time converter functions for slider.
         //--------------------------------------------------
 
         /**
@@ -386,8 +208,136 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             return position;
         }
 
+        // Slider functions that are required for slider initializations.
+        //---------------------------------------------------------------
+
+        /**
+         * Set label text according to the position of the slider.
+         */
+        function resetSliderLabelText() {
+            var x = jQuery(_sliderBg.node).offset().left;
+            var date = new Date(timeToResolution(posToTime(x)));
+            _sliderLabel.attr('text', getTimeStr(date));
+        }
+
+        /**
+         * @param {Integer} x X position relative to the window origin.
+         *                    Notice, x should refer to new x position of the
+         *                    left side of slider.
+         */
+        function moveSliderTo(x) {
+            var delta = x - jQuery(_sliderBg.node).offset().left;
+            var newTipX = x + _sliderConfig.sliderTipDx;
+            var scaleX = getScaleAreaOffsetX();
+            if (delta && newTipX >= scaleX && newTipX <= scaleX + getScaleAreaWidth()) {
+                _slider.transform("...T" + delta + ",0");
+                resetSliderLabelText();
+                resetHotSpots();
+            }
+        }
+
+        function redrawSlider() {
+            _slider.toFront();
+            resetSliderLabelText();
+        }
+
+        // Slider drag flow callback functions are required for slider initializations.
+        //-----------------------------------------------------------------------------
+
+        /**
+         * @param x X position of the mouse.
+         * @param y Y position of the mouse.
+         * @param event DOM event object.
+         */
+        function startDragMove(x, y, event) {
+            _timeController.proposePause();
+            _dragStartX = jQuery(_sliderBg.node).offset().left;
+        }
+
+        /**
+         * @param dx shift by x from the start point
+         * @param dy shift by y from the start point
+         * @param x X position of the mouse.
+         * @param y Y position of the mouse.
+         * @param event DOM event object.
+         */
+        function dragMove(dx, dy, x, y, event) {
+            // Notice, the given x is the position of the mouse,
+            // not the exact position of the left side of the slider.
+            // Also, dx is relative to the drag start position, not
+            // to the previous  movement.
+            var newTime = posToTime(_dragStartX + dx);
+            _timeController.proposeTimeSelectionChange(newTime);
+        }
+
+        /**
+         * @param event DOM event object.
+         */
+        function finalizeDragMove(event) {
+            _dragStartX = undefined;
+        }
+
         // Private scale functions.
         //-------------------------
+
+        // Scale functions that are required for scale initializations.
+        //-------------------------------------------------------------
+
+        function nextFrame() {
+            _timeController.proposeNextFrame();
+        }
+
+        function previousFrame() {
+            _timeController.proposePreviousFrame();
+        }
+
+        // Handle mouse scroll event.
+        function handleMouseScroll(e) {
+            if (e.originalEvent.wheelDelta > 0) {
+                // Scrolling up.
+                nextFrame();
+
+            } else {
+                // Scrolling down.
+                previousFrame();
+            }
+            // Prevent scrolling of the page.
+            e.preventDefault();
+        }
+
+        function getObsWidth() {
+            var width = 0;
+            if (getForecastStartTime()) {
+                // Forecast start time is given. So, calculate the width.
+                width = _model && Math.floor((getEndTime() - getStartTime()) ? getScaleAreaWidth() * (getForecastStartTime() - getStartTime()) / (getEndTime() - getStartTime()) : 0);
+
+            } else {
+                // Observation takes the whole scale width if forecast is not used.
+                width = getScaleAreaWidth();
+            }
+            if (width < 0) {
+                width = 0;
+            }
+            return width;
+        }
+
+        function getFctWidth() {
+            var width = _model ? getScaleAreaWidth() - getObsWidth() : 0;
+            if (width < 0) {
+                width = 0;
+            }
+            return width;
+        }
+
+        /**
+         * @return X relative to the window.
+         */
+        function getScaleAreaOffsetX() {
+            return jQuery(_scaleContainer.node).offset().left + getScalePadding();
+        }
+
+        // Scale functions for animation.
+        //-------------------------------
 
         function redrawScaleBackground() {
             var obsWidth = getObsWidth();
@@ -516,8 +466,26 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             }
         }
 
+        // Private controller functions.
+        //------------------------------
+
+        /**
+         * Redraw scale and slider elements.
+         */
+        function redrawAll() {
+            redrawScaleBackground();
+            redrawTimeCells();
+            redrawTics();
+            redrawSlider();
+            resetHotSpots();
+            // Make sure hot spots are in front.
+            _leftHotSpot.toFront();
+            _rightHotSpot.toFront();
+        }
+
         // Animation event listener callbacks.
         //-----------------------------------
+
         function loadAnimationStartedCb(event) {
             progressCellColorToDefault(event);
         }
@@ -564,48 +532,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                 // Propose change to controller which will direct change to slider.
                 moveSliderTo(timeToPos(time));
             }
-        }
-
-        function getForecastStartTime() {
-            return _model ? _model.getForecastStartTime() : 0;
-        }
-
-        function getStartTime() {
-            return _model ? _model.getStartTime() : 0;
-        }
-
-        function getEndTime() {
-            return _model ? _model.getEndTime() : 0;
-        }
-
-        function getResolution() {
-            return _model ? _model.getResolution() : 0;
-        }
-
-        /**
-         * @return X relative to the parent, not necessary a window.
-         */
-        function getScaleAreaX() {
-            return _scaleContainer.getBBox().x + getScalePadding();
-        }
-
-        /**
-         * @return Y relative to the parent, not necessary a window.
-         */
-        function getScaleAreaY() {
-            return _scaleContainer.getBBox().y;
-        }
-
-        function getScaleAreaWidth() {
-            return Math.floor(_scaleConfig.width - 2 * getScalePadding());
-        }
-
-        function getScaleAreaHeight() {
-            return Math.floor(_scaleContainer.getBBox().height);
-        }
-
-        function getTimeScale() {
-            return _model && getScaleAreaWidth() ? (_model.getEndTime() - _model.getStartTime()) / getScaleAreaWidth() : 1;
         }
 
         // Public functions.
@@ -660,6 +586,127 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         function remove() {
             _paper.remove();
         }
+
+        /**
+         * Init function to initialize controller member variables.
+         *
+         * Notice, this function is automatically called when constructor is called.
+         */
+        (function init() {
+            _paper = createCanvas(element, width, height);
+
+            // Initialization configurations.
+            _scaleConfig = {
+                // Corner radius.
+                radius : 5,
+                x : 0,
+                y : 0,
+                width : width,
+                height : height - 35,
+                bgColor : Raphael.rgb(88, 88, 88),
+                cellReadyColor : Raphael.rgb(148, 191, 119),
+                cellErrorColor : Raphael.rgb(154, 37, 0),
+                cellLoadingColor : Raphael.rgb(148, 191, 191),
+                strokeBgColor : Raphael.rgb(191, 191, 191),
+                obsBgColor : Raphael.rgb(178, 216, 234),
+                fctBgColor : Raphael.rgb(231, 166, 78)
+            };
+            _scaleConfig.bgHeight = Math.floor(2 * _scaleConfig.height / 3);
+            // Make progress cell height a little bit smaller than remaining area.
+            // Then, background color is shown a little bit in behind.
+            _scaleConfig.progressCellHeight = _scaleConfig.height - _scaleConfig.bgHeight - 2;
+
+            _sliderConfig = {
+                height : 30,
+                width : 65,
+                bgColor : Raphael.rgb(88, 88, 88),
+                strokeBgColor : Raphael.rgb(191, 191, 191)
+            };
+            // Notice, that polygon is drawn by using path. See, _sliderBg variable.
+            // Notice, the polygon path height is 7 and tip height is 3. Therefore, use corresponding ration here.
+            _sliderConfig.sliderTipHeight = _sliderConfig.height * (3 / 7);
+            // Polygon path width is 14. Scale to the width given here.
+            _sliderConfig.scaleX = _sliderConfig.width / 14;
+            _sliderConfig.scaleY = (_sliderConfig.height + _sliderConfig.sliderTipHeight) / 7;
+            // The tip x position is 4 in the polygon path. So, use that with the scale.
+            _sliderConfig.sliderTipDx = Math.floor(4 * _sliderConfig.scaleX);
+            // Make slider overlap the scale a little bit.
+            _sliderConfig.y = _scaleConfig.y + _scaleConfig.height - Math.floor(_sliderConfig.sliderTipHeight / 3);
+
+            // Scale initializations.
+            //-----------------------
+
+            // Scale variables.
+            // Collection of scale tick elements.
+            _tickSet = _paper.set();
+            // Collection of progress cell elements.
+            _progressCellSet = _paper.set();
+
+            // Create scale UI components.
+            // Scale container is used in the background of the scale elements.
+            // Its purpose is just to provide information about the area and its position.
+            _scaleContainer = _paper.rect(_scaleConfig.x, _scaleConfig.y, _scaleConfig.width, _scaleConfig.height, _scaleConfig.radius);
+            _scaleContainer.attr('fill', _scaleConfig.bgColor);
+            _scaleContainer.attr('stroke', _scaleConfig.strokeBgColor);
+            // Keep it hidden in the background.
+            _scaleContainer.attr('opacity', 0);
+
+            // Background behind obs and fct.
+            _background = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getObsWidth() + getFctWidth(), _scaleConfig.height);
+            _background.attr('fill', _scaleConfig.bgColor);
+            _background.attr('stroke-width', 0);
+
+            _obsBackground = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getObsWidth(), _scaleConfig.bgHeight);
+            _obsBackground.attr('fill', _scaleConfig.obsBgColor);
+            _obsBackground.attr('stroke-width', 0);
+
+            _fctBackground = _paper.rect(_scaleConfig.x + getScalePadding() + getObsWidth(), _scaleConfig.y, getFctWidth(), _scaleConfig.bgHeight);
+            _fctBackground.attr('fill', _scaleConfig.fctBgColor);
+            _fctBackground.attr('stroke-width', 0);
+
+            _leftHotSpot = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getScalePadding(), _scaleConfig.height);
+            // Fill is required. Otherwise, click does not work.
+            _leftHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
+            _leftHotSpot.click(previousFrame);
+
+            _rightHotSpot = _paper.rect(_scaleConfig.x + width - 2 * getScalePadding(), _scaleConfig.y, getScalePadding(), _scaleConfig.height);
+            // Fill is required. Otherwise, click does not work.
+            _rightHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
+            _rightHotSpot.click(nextFrame);
+
+            // Handle mouse wheel over the scale.
+            jQuery([_scaleContainer.node, _background.node, _obsBackground.node, _fctBackground.node, _leftHotSpot.node, _rightHotSpot.node]).bind('mousewheel', handleMouseScroll);
+
+            // Slider initializations.
+            //------------------------
+
+            // Collects all the slider elements.
+            _slider = _paper.set();
+
+            _sliderBg = _paper.path("M0,2L0,7L14,7L14,2L6,2L4,0L2,2Z");
+            _sliderBg.attr('fill', _sliderConfig.bgColor);
+            _sliderBg.attr('stroke', _sliderConfig.strokeBgColor);
+            _sliderBg.transform("S" + _sliderConfig.scaleX + "," + _sliderConfig.scaleY + ",0,0T0," + _sliderConfig.y);
+
+            _sliderLabel = _paper.text(32, _sliderConfig.y + 26, "00:00").attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize).attr("fill", Raphael.rgb(191, 191, 191));
+
+            _slider.push(_sliderBg);
+            _slider.push(_sliderLabel);
+
+            // Set drag handlers.
+            _slider.drag(dragMove, startDragMove, finalizeDragMove, this, this, this);
+
+            // Reset initial time for label.
+            resetSliderLabelText();
+
+            // Handle mouse wheel over the slider.
+            jQuery([_sliderBg.node, _sliderLabel.node]).bind('mousewheel', handleMouseScroll);
+
+            // Move slider to the initial position.
+            // Notice, because this is the first move, use also _sliderConfig.sliderTipDx to set tip position to the beginning.
+            // Otherwise, left side should be given.
+            moveSliderTo(getScaleAreaOffsetX() - _sliderConfig.sliderTipDx);
+        })();
 
         // Public API functions
         //======================
