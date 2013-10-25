@@ -71,14 +71,59 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         // This is updated when slider is dragged.
         var _dragStartX;
 
+        // Private element position information functions.
+        //------------------------------------------------
+
+        /**
+         * This is required to make sure slider is not hidden when it is in the side.
+         * This happends if it is outside of the paper. Therefore, use padding that
+         * takes this into account.
+         *
+         * @return {Integer} Scale padding.
+         */
+        function getScalePadding() {
+            // Notice, exact value can be calculated by _sliderConfig.width - _sliderConfig.sliderTipDx.
+            // But it may be better to use constant. Then, for example UI CSS design may be easier to do if
+            // values are constants.
+            return 50;
+        }
+
+        /**
+         * @return {Integer} Scale container offset relative to the window.
+         */
+        function getScaleContainerOffsetX() {
+            return Math.floor(jQuery(_scaleContainer.node).offset().left);
+        }
+
+        /**
+         * @return {Integer} Scale area offset relative to the window.
+         */
+        function getScaleAreaOffsetX() {
+            return getScaleContainerOffsetX() + getScalePadding();
+        }
+
+        /**
+         * @return {Integer} Slider background offset relative to the window.
+         */
+        function getSliderBackgroundOffsetX() {
+            return Math.floor(jQuery(_sliderBg.node).offset().left);
+        }
+
+        /**
+         * @return {Integer} Controller background offset relative to the window.
+         */
+        function getBackgroundOffsetX() {
+            return Math.floor(jQuery(_background.node).offset().left);
+        }
+
         // Private controller functions.
         //------------------------------
 
         function resetHotSpots() {
-            var sliderTipOffsetX = jQuery(_sliderBg.node).offset().left + _sliderConfig.sliderTipDx;
+            var sliderTipOffsetX = getSliderBackgroundOffsetX() + _sliderConfig.sliderTipDx;
             // Left hot spot always starts from the same place. Only length changes.
             // Left hot spot width is to the position of the slider tip.
-            var leftWidth = sliderTipOffsetX - jQuery(_background.node).offset().left;
+            var leftWidth = sliderTipOffsetX - getBackgroundOffsetX();
             if (leftWidth < 0) {
                 leftWidth = 0;
             }
@@ -92,20 +137,8 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _rightHotSpot.attr("x", _leftHotSpot.attr("x") + leftWidth).attr("width", rightWidth);
         }
 
-        // Private model and element information functions.
-        //-------------------------------------------------
-
-        /**
-         * This is required to make sure slider is not hidden when it is in the side.
-         * This happends if it is outside of the paper. Therefore, use padding that
-         * takes this into account.
-         */
-        function getScalePadding() {
-            // Notice, exact value can be calculated by _sliderConfig.width - _sliderConfig.sliderTipDx.
-            // But it may be better to use constant. Then, for example UI CSS design may be easier to do if
-            // values are constants.
-            return 50;
-        }
+        // Private model functions.
+        //-------------------------
 
         function getForecastStartTime() {
             return _model ? _model.getForecastStartTime() : 0;
@@ -215,7 +248,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          * Set label text according to the position of the slider.
          */
         function resetSliderLabelText() {
-            var x = jQuery(_sliderBg.node).offset().left;
+            var x = getSliderBackgroundOffsetX();
             var date = new Date(timeToResolution(posToTime(x)));
             _sliderLabel.attr('text', getTimeStr(date));
         }
@@ -260,7 +293,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          *                    left side of slider.
          */
         function moveSliderTo(x) {
-            var delta = Math.round(x - jQuery(_sliderBg.node).offset().left);
+            var delta = Math.round(x - getSliderBackgroundOffsetX());
             var newTipX = x + _sliderConfig.sliderTipDx;
             var scaleX = getScaleAreaOffsetX();
             if (delta && newTipX >= scaleX && newTipX <= scaleX + getScaleAreaWidth()) {
@@ -285,7 +318,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          */
         function startDragMove(x, y, event) {
             _timeController.proposePause();
-            _dragStartX = jQuery(_sliderBg.node).offset().left;
+            _dragStartX = getSliderBackgroundOffsetX();
         }
 
         /**
@@ -361,13 +394,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                 width = 0;
             }
             return width;
-        }
-
-        /**
-         * @return X relative to the window.
-         */
-        function getScaleAreaOffsetX() {
-            return jQuery(_scaleContainer.node).offset().left + getScalePadding();
         }
 
         // Scale functions for animation.
