@@ -91,6 +91,9 @@ module.exports = function(grunt) {
                     dest : 'deps/jquery.flot.axislabels/jquery.flot.axislabels-min.js',
                     src : ['deps/jquery.flot.axislabels/jquery.flot.axislabels.js']
                 }, {
+                    dest : 'deps/jquery-mousewheel/jquery.mousewheel-min.js',
+                    src : ['deps/jquery-mousewheel/jquery.mousewheel.js']
+                }, {
                     dest : 'deps/jquery.rule/jquery.rule-1.0.2-min.js',
                     src : ['deps/jquery.rule/jquery.rule-1.0.2.js']
                 },
@@ -148,7 +151,6 @@ module.exports = function(grunt) {
                     dest : 'deps/jquery.flot-0.8.2-alpha/minified/jquery-1.8.3-min.js',
                     src : ['deps/jquery.flot-0.8.2-alpha/jquery.js']
                 }]
-
             }
         },
 

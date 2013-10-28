@@ -375,17 +375,17 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         // Handle mouse scroll event.
-        function handleMouseScroll(e) {
-            if (e.originalEvent.wheelDelta > 0) {
+        function handleMouseScroll(event, delta, deltaX, deltaY) {
+            if (delta > 0) {
                 // Scrolling up.
                 nextFrame();
 
-            } else {
+            } else if (delta < 0) {
                 // Scrolling down.
                 previousFrame();
             }
             // Prevent scrolling of the page.
-            e.preventDefault();
+            return false;
         }
 
         function getObsWidth() {
@@ -459,7 +459,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                     // is handled instead of handling cell ahead of the time.
                     cell.node.id = "animationProgressCell_" + (begin + (i + 1) * resolution);
                     _progressCellSet.push(cell);
-                    jQuery(cell.node).bind('mousewheel', handleMouseScroll);
+                    jQuery(cell.node).mousewheel(handleMouseScroll);
                 }
             }
         }
@@ -507,7 +507,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                         var tick = _paper.path("M" + positionX + "," + beginY + "V" + tickEndY);
                         tick.attr("stroke", Raphael.getRGB("white")).attr("opacity", 0.5);
                         _tickSet.push(tick);
-                        jQuery(tick.node).bind('mousewheel', handleMouseScroll);
+                        jQuery(tick.node).mousewheel(handleMouseScroll);
                         if (newHour && i < cellCount) {
                             var hourLabel = _paper.text(positionX + 2, getScaleAreaY() + 8, getTimeStr(date)).attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize).attr("fill", Raphael.getRGB("black"));
                             // Check if the hourlabel fits into the scale area.
@@ -515,7 +515,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                             if (hourLabelNode.offset().left + hourLabelNode.width() <= getScaleAreaOffsetX() + getScaleAreaWidth()) {
                                 // Label fits. So, let it be in the UI.
                                 _tickSet.push(hourLabel);
-                                jQuery(hourLabel.node).bind('mousewheel', handleMouseScroll);
+                                jQuery(hourLabel.node).mousewheel(handleMouseScroll);
 
                             } else {
                                 // Remove hour label because it overlaps the border.
@@ -702,7 +702,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _rightHotSpot.click(nextFrame);
 
             // Handle mouse wheel over the scale.
-            jQuery([_scaleContainer.node, _background.node, _obsBackground.node, _fctBackground.node, _leftHotSpot.node, _rightHotSpot.node]).bind('mousewheel', handleMouseScroll);
+            jQuery([_scaleContainer.node, _background.node, _obsBackground.node, _fctBackground.node, _leftHotSpot.node, _rightHotSpot.node]).mousewheel(handleMouseScroll);
 
             // Slider initializations.
             //------------------------
@@ -728,7 +728,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             resetSliderLabelText();
 
             // Handle mouse wheel over the slider.
-            jQuery([_sliderBg.node, _sliderLabel.node]).bind('mousewheel', handleMouseScroll);
+            jQuery([_sliderBg.node, _sliderLabel.node]).mousewheel(handleMouseScroll);
 
             // Move slider to the initial position.
             moveSliderTo(getScaleAreaOffsetX());
