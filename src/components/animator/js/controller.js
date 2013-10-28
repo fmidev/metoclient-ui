@@ -594,58 +594,8 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             }
         }
 
-        // Public functions.
-        //------------------
-
-        /**
-         * See API for description.
-         */
-        function setTimeModel(model) {
-            _model = model;
-            model.addTimePeriodChangeListener({
-                timePeriodChanged : function(start, end) {
-                    redrawAll();
-                }
-            });
-
-            model.addTimeSelectionChangeListener({
-                selectedTimeChanged : function(time) {
-                    moveSliderTo(timeToPos(time));
-                }
-            });
-
-            model.addForecastStartTimeChangeListener({
-                forecastStartTimeChanged : function(time) {
-                    redrawScaleBackground();
-                }
-            });
-
-            model.addAnimationEventsListener({
-                loadAnimationStartedCb : loadAnimationStartedCb,
-                loadFrameStartedCb : loadFrameStartedCb,
-                loadFrameCompleteCb : loadFrameCompleteCb,
-                loadGroupProgressCb : loadGroupProgressCb,
-                loadCompleteCb : loadCompleteCb,
-                animationFrameContentReleasedCb : animationFrameContentReleasedCb,
-                frameChangedCb : frameChangedCb
-            });
-
-            redrawAll();
-        }
-
-        /**
-         * See API for description.
-         */
-        function setTimeController(controller) {
-            _timeController = controller;
-        }
-
-        /**
-         * See API for description.
-         */
-        function remove() {
-            _paper.remove();
-        }
+        // Private initialization functions.
+        //----------------------------------
 
         /**
          * Init function to initialize controller member variables.
@@ -767,6 +717,59 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Otherwise, left side should be given.
             moveSliderTo(getScaleAreaOffsetX() - _sliderConfig.sliderTipDx);
         })();
+
+        // Public functions.
+        //------------------
+
+        /**
+         * See API for description.
+         */
+        function setTimeModel(model) {
+            _model = model;
+            model.addTimePeriodChangeListener({
+                timePeriodChanged : function(start, end) {
+                    redrawAll();
+                }
+            });
+
+            model.addTimeSelectionChangeListener({
+                selectedTimeChanged : function(time) {
+                    moveSliderTo(timeToPos(time));
+                }
+            });
+
+            model.addForecastStartTimeChangeListener({
+                forecastStartTimeChanged : function(time) {
+                    redrawScaleBackground();
+                }
+            });
+
+            model.addAnimationEventsListener({
+                loadAnimationStartedCb : loadAnimationStartedCb,
+                loadFrameStartedCb : loadFrameStartedCb,
+                loadFrameCompleteCb : loadFrameCompleteCb,
+                loadGroupProgressCb : loadGroupProgressCb,
+                loadCompleteCb : loadCompleteCb,
+                animationFrameContentReleasedCb : animationFrameContentReleasedCb,
+                frameChangedCb : frameChangedCb
+            });
+
+            redrawAll();
+        }
+
+        /**
+         * See API for description.
+         */
+        function setTimeController(controller) {
+            _timeController = controller;
+        }
+
+        /**
+         * See API for description.
+         */
+        function remove() {
+            _paper.remove();
+        }
 
         // Public API functions
         //======================
