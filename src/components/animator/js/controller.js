@@ -1,8 +1,13 @@
 "use strict";
 
-//Requires Raphael JS
+// Requires Raphael JS
 if ( typeof Raphael === "undefined" || !Raphael) {
-    throw "ERROR: Raphael JS is required for fi.fmi.metoclient.ui.animator.AnimationControl!";
+    throw "ERROR: Raphael JS is required for fi.fmi.metoclient.ui.animator.Controller!";
+}
+
+// Requires jQuery
+if ("undefined" === typeof jQuery || !jQuery) {
+    throw "ERROR: jQuery is required for fi.fmi.metoclient.ui.animator.Controller!";
 }
 
 //"Package" definitions
@@ -67,6 +72,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
 
         var _slider;
         var _sliderBg;
+        var _sliderBgOffsetCorrection;
         var _sliderLabel;
         // This is updated when slider is dragged.
         var _dragStartX;
@@ -106,31 +112,45 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          * @return {Integer} Slider background offset relative to the window.
          */
         function getSliderBackgroundOffsetX() {
-            return Math.floor(jQuery(_sliderBg.node).offset().left);
+            var x = Math.floor(jQuery(_sliderBg.node).offset().left);
+            if (undefined === _sliderBgOffsetCorrection) {
+                // Firefox seems to show the slider a little bit off the place.
+                // Problem seems to be related to the stroke width of the slider.
+                // Therefore, check if the offset is negative during the first step.
+                // Possible negative value gives the proper correction for offset.
+                if (x < 0) {
+                    _sliderBgOffsetCorrection = Math.abs(x);
+
+                } else {
+                    _sliderBgOffsetCorrection = 0;
+                }
+            }
+            // Correction value is used to make sure offset is correct.
+            x += _sliderBgOffsetCorrection;
+            return x;
         }
 
         /**
-         * @return {Integer} Controller background offset relative to the window.
+         * @return {Integer} Slider tip offset relative to the window.
          */
-        function getBackgroundOffsetX() {
-            return Math.floor(jQuery(_background.node).offset().left);
+        function getSliderTipOffsetX() {
+            return getSliderBackgroundOffsetX() + _sliderConfig.sliderTipDx;
         }
 
         // Private controller functions.
         //------------------------------
 
         function resetHotSpots() {
-            var sliderTipOffsetX = getSliderBackgroundOffsetX() + _sliderConfig.sliderTipDx;
             // Left hot spot always starts from the same place. Only length changes.
             // Left hot spot width is to the position of the slider tip.
-            var leftWidth = sliderTipOffsetX - getBackgroundOffsetX();
+            var leftWidth = getSliderTipOffsetX() - getScaleContainerOffsetX();
             if (leftWidth < 0) {
                 leftWidth = 0;
             }
             _leftHotSpot.attr("width", leftWidth);
 
             // Right hot spot position and width change when slider moves.
-            var rightWidth = _background.attr("width") - leftWidth;
+            var rightWidth = _scaleContainer.attr("width") - leftWidth;
             if (rightWidth < 0) {
                 rightWidth = 0;
             }
@@ -209,15 +229,14 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         /**
-         * @param {Integer} x X position of the left side of the slider relative to window origin.
-         * @return {Integer} Time corresponding to the left side of the slider.
+         * @param {Integer} x X position of the tip of the slider relative to window origin.
+         * @return {Integer} Time corresponding to given x position.
          */
         function posToTime(x) {
             // Container may not be located to the origin of the window.
             // Therefore, take the correct position into account.
             // Also notice, correct time should be identified by the tip position.
-            var sliderOffset = getScaleAreaOffsetX() - _sliderConfig.sliderTipDx;
-            var time = Math.floor(getStartTime() + ((x - sliderOffset) * getTimeScale()));
+            var time = Math.floor(getStartTime() + ((x - getScaleAreaOffsetX()) * getTimeScale()));
             if (time < getStartTime()) {
                 time = getStartTime();
 
@@ -229,12 +248,11 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
 
         /**
          * @param {Integer} time Time in milliseconds.
-         * @return {Integer} X position of the left side of the slider corresponding to the given time.
+         * @return {Integer} X position of the given time.
          */
         function timeToPos(time) {
             // Container may not be located to the origin of the window.
-            // Also notice, correct time should be identified by the tip position.
-            var sliderOffset = getScaleAreaOffsetX() - _sliderConfig.sliderTipDx;
+            var sliderOffset = getScaleAreaOffsetX();
             var deltaT = time - getStartTime();
             var timeScale = getTimeScale();
             var position = Math.floor(sliderOffset + ( timeScale ? deltaT / timeScale : 0 ));
@@ -248,8 +266,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          * Set label text according to the position of the slider.
          */
         function resetSliderLabelText() {
-            var x = getSliderBackgroundOffsetX();
-            var date = new Date(timeToResolution(posToTime(x)));
+            var date = new Date(timeToResolution(posToTime(getSliderTipOffsetX())));
             _sliderLabel.attr('text', getTimeStr(date));
         }
 
@@ -290,13 +307,12 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         /**
          * @param {Integer} x X position relative to the window origin.
          *                    Notice, x should refer to new x position of the
-         *                    left side of slider.
+         *                    tip of slider.
          */
         function moveSliderTo(x) {
-            var delta = Math.round(x - getSliderBackgroundOffsetX());
-            var newTipX = x + _sliderConfig.sliderTipDx;
+            var delta = Math.round(x - getSliderTipOffsetX());
             var scaleX = getScaleAreaOffsetX();
-            if (delta && newTipX >= scaleX && newTipX <= scaleX + getScaleAreaWidth()) {
+            if (delta && x >= scaleX && x <= scaleX + getScaleAreaWidth()) {
                 transformSliderElements(delta);
                 resetSliderLabelText();
                 resetHotSpots();
@@ -330,9 +346,9 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          */
         function dragMove(dx, dy, x, y, event) {
             // Notice, the given x is the position of the mouse,
-            // not the exact position of the left side of the slider.
-            // Also, dx is relative to the drag start position, not
-            // to the previous  movement.
+            // not the exact position of the slider. Also, dx is
+            // relative to the drag start position, not to the
+            // previous movement.
             var newTime = posToTime(_dragStartX + dx);
             _timeController.proposeTimeSelectionChange(newTime);
         }
@@ -617,7 +633,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                 cellReadyColor : Raphael.rgb(148, 191, 119),
                 cellErrorColor : Raphael.rgb(154, 37, 0),
                 cellLoadingColor : Raphael.rgb(148, 191, 191),
-                strokeBgColor : Raphael.rgb(191, 191, 191),
                 obsBgColor : Raphael.rgb(178, 216, 234),
                 fctBgColor : Raphael.rgb(231, 166, 78)
             };
@@ -630,7 +645,8 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                 height : 30,
                 width : 65,
                 bgColor : Raphael.rgb(88, 88, 88),
-                strokeBgColor : Raphael.rgb(191, 191, 191)
+                strokeBgColor : Raphael.rgb(191, 191, 191),
+                strokeWidth : 1
             };
             // Notice, that polygon is drawn by using path. See, _sliderBg variable.
             // Notice, the polygon path height is 7 and tip height is 3. Therefore, use corresponding ration here.
@@ -656,8 +672,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Scale container is used in the background of the scale elements.
             // Its purpose is just to provide information about the area and its position.
             _scaleContainer = _paper.rect(_scaleConfig.x, _scaleConfig.y, _scaleConfig.width, _scaleConfig.height, _scaleConfig.radius);
-            _scaleContainer.attr('fill', _scaleConfig.bgColor);
-            _scaleContainer.attr('stroke', _scaleConfig.strokeBgColor);
+            _scaleContainer.attr('stroke-width', 0);
             // Keep it hidden in the background.
             _scaleContainer.attr('opacity', 0);
 
@@ -674,14 +689,16 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _fctBackground.attr('fill', _scaleConfig.fctBgColor);
             _fctBackground.attr('stroke-width', 0);
 
-            _leftHotSpot = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getScalePadding(), _scaleConfig.height);
+            _leftHotSpot = _paper.rect(_scaleConfig.x, _scaleConfig.y, getScalePadding(), _scaleConfig.height);
             // Fill is required. Otherwise, click does not work.
             _leftHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
+            _leftHotSpot.attr('stroke-width', 0);
             _leftHotSpot.click(previousFrame);
 
-            _rightHotSpot = _paper.rect(_scaleConfig.x + width - 2 * getScalePadding(), _scaleConfig.y, getScalePadding(), _scaleConfig.height);
+            _rightHotSpot = _paper.rect(_scaleConfig.x + width, _scaleConfig.y, getScalePadding(), _scaleConfig.height);
             // Fill is required. Otherwise, click does not work.
             _rightHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
+            _rightHotSpot.attr('stroke-width', 0);
             _rightHotSpot.click(nextFrame);
 
             // Handle mouse wheel over the scale.
@@ -696,9 +713,10 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _sliderBg = _paper.path("M0,2L0,7L14,7L14,2L6,2L4,0L2,2Z");
             _sliderBg.attr('fill', _sliderConfig.bgColor);
             _sliderBg.attr('stroke', _sliderConfig.strokeBgColor);
+            _sliderBg.attr('stroke-width', _sliderConfig.strokeWidth);
             _sliderBg.transform("S" + _sliderConfig.scaleX + "," + _sliderConfig.scaleY + ",0,0T0," + _sliderConfig.y);
 
-            _sliderLabel = _paper.text(32, _sliderConfig.y + 26, "00:00").attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize).attr("fill", Raphael.rgb(191, 191, 191));
+            _sliderLabel = _paper.text(32, _sliderConfig.y + 26, "00:00").attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize).attr("fill", _sliderConfig.strokeBgColor).attr('stroke-width', _sliderConfig.strokeWidth);
 
             _slider.push(_sliderBg);
             _slider.push(_sliderLabel);
@@ -713,9 +731,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             jQuery([_sliderBg.node, _sliderLabel.node]).bind('mousewheel', handleMouseScroll);
 
             // Move slider to the initial position.
-            // Notice, because this is the first move, use also _sliderConfig.sliderTipDx to set tip position to the beginning.
-            // Otherwise, left side should be given.
-            moveSliderTo(getScaleAreaOffsetX() - _sliderConfig.sliderTipDx);
+            moveSliderTo(getScaleAreaOffsetX());
         })();
 
         // Public functions.
