@@ -72,7 +72,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
 
         var _slider;
         var _sliderBg;
-        var _sliderBgOffsetCorrection;
         var _sliderLabel;
         // This is updated when slider is dragged.
         var _dragStartX;
@@ -112,21 +111,13 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          * @return {Integer} Slider background offset relative to the window.
          */
         function getSliderBackgroundOffsetX() {
+            // Firefox seems to show the slider a little bit off the place.
+            // Problem seems to be related to the stroke width of the slider.
+            // Therefore, set 0 for the width before getting the offset value
+            // and change the width value back after offset value is gotten.
+            _sliderBg.attr('stroke-width', 0);
             var x = Math.floor(jQuery(_sliderBg.node).offset().left);
-            if (undefined === _sliderBgOffsetCorrection) {
-                // Firefox seems to show the slider a little bit off the place.
-                // Problem seems to be related to the stroke width of the slider.
-                // Therefore, check if the offset is negative during the first step.
-                // Possible negative value gives the proper correction for offset.
-                if (x < 0) {
-                    _sliderBgOffsetCorrection = Math.abs(x);
-
-                } else {
-                    _sliderBgOffsetCorrection = 0;
-                }
-            }
-            // Correction value is used to make sure offset is correct.
-            x += _sliderBgOffsetCorrection;
+            _sliderBg.attr('stroke-width', _sliderConfig.strokeWidth);
             return x;
         }
 
@@ -716,7 +707,9 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _sliderBg.attr('stroke-width', _sliderConfig.strokeWidth);
             _sliderBg.transform("S" + _sliderConfig.scaleX + "," + _sliderConfig.scaleY + ",0,0T0," + _sliderConfig.y);
 
-            _sliderLabel = _paper.text(32, _sliderConfig.y + 26, "00:00").attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize).attr("fill", _sliderConfig.strokeBgColor).attr('stroke-width', _sliderConfig.strokeWidth);
+            _sliderLabel = _paper.text(32, _sliderConfig.y + 26, "00:00");
+            _sliderLabel.attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize);
+            _sliderLabel.attr("fill", _sliderConfig.strokeBgColor).attr('stroke-width', 0);
 
             _slider.push(_sliderBg);
             _slider.push(_sliderLabel);
