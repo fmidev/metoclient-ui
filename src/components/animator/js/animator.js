@@ -26,6 +26,10 @@ fi.fmi.metoclient = fi.fmi.metoclient || {};
 fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
 fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
 
+if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Factory || !fi.fmi.metoclient.ui.animator.Factory) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.Factory is required for fi.fmi.metoclient.ui.animator.Animator!";
+}
+
 if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Controller || !fi.fmi.metoclient.ui.animator.Controller) {
     throw "ERROR: fi.fmi.metoclient.ui.animator.Controller is required for fi.fmi.metoclient.ui.animator.Animator!";
 }
@@ -190,6 +194,62 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // Private functions.
         //-------------------
 
+        /**
+         * Handles the callback and possible error situations there.
+         *
+         * @param {function(data, errors)} callback Callback function that is called.
+         *                                          Operation is ignored if {undefined} or {null}.
+         * @param [] errors Array that contains possible errors that occurred during the asynchronous flow.
+         *                  May be {undefined} or {null}.
+         */
+        var handleCallback = function(callback, errors) {
+            try {
+                if (callback) {
+                    callback(this, errors);
+                }
+
+            } catch(e) {
+                // Ignore errors that may occur in the callback.
+                // Callback may be provided from outside of this library.
+                if ("undefined" !== typeof console && console) {
+                    console.error("ERROR: Callback function error!");
+                }
+            }
+        };
+
+        /**
+         * Callback for configuration {init} function call.
+         *
+         * See more details from {init} function for {options} and {errors} parameters.
+         *
+         * @param {Object} options Options for animator initialization.
+         * @param {Array} errors Array that contains possible errors that occurred during the flow.
+         */
+        function configInitCallback(options, errors) {
+            // Create structure only if initialization was a total success.
+            if (errors && errors.length) {
+                // Inform that animation structure is not created at all.
+                // Just highlight this by showing text in a console.
+                // Callback itself passes the errors.
+                if ("undefined" !== typeof console && console) {
+                    console.error("ERROR: Animator config init errors. Animation is not created!");
+                }
+
+            } else {
+                // Create animation structure for the content.
+                createStructure(options);
+
+                // Use options and configuration object to set map and layers.
+                setMapAndLayers();
+
+                // Create slider. Notice, this will set itself according to the options.
+                createController();
+            }
+
+            // Handle callback after asynchronous initialization.
+            handleCallback(options.callback, errors);
+        }
+
         // Utils functions.
         //-----------------
 
@@ -278,6 +338,14 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          */
         function getResolution() {
             return _config.getAnimationResolution();
+        }
+
+        /**
+         * @return {Date} The forecast begin date for the whole animation.
+         *                May not be {undefined}.
+         */
+        function getForecastBeginDate() {
+            return _config.getForecastBeginDate();
         }
 
         // UI component handler functions.
@@ -885,8 +953,11 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     var startTime = getBeginDate().getTime();
                     var endTime = getEndDate().getTime();
                     // Forecast start time.
-                    // If end time is less than current time, then forecast is not used and value is left undefined.
-                    var fctStart = currentTime <= endTime ? currentTime : undefined;
+                    var fctStart = getForecastBeginDate().getTime();
+                    // If end time is less than forecast time, then forecast is not used and value is left undefined.
+                    if (endTime < fctStart) {
+                        fctStart = undefined;
+                    }
                     var timePeriodListeners = [];
                     var timeSelectionListeners = [];
                     var fctStartTimeListeners = [];
@@ -1044,6 +1115,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          * See API for function description.
          */
         function getConfig() {
+            if (_options && !_options.callback) {
+                var errorStr = "ERROR: Animator init options.callback is mandatory if getConfig is used!";
+                if ("undefined" !== typeof console && console) {
+                    console.error(errorStr);
+                }
+                throw errorStr;
+            }
             return _config;
         }
 
@@ -1100,22 +1178,34 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          */
         function init(options) {
             if (!_options && options) {
-                // Set options and create config only once.
-                _options = options;
-                // Configuration object is deep cloned here.
-                // Then, if properties are changed during the flow, the content of the original object is not changed.
-                _config = new fi.fmi.metoclient.ui.animator.Factory(_.cloneDeep(options.config || fi.fmi.metoclient.ui.animator.Config, cloneDeepCallback));
+                try {
+                    // Set options and create config only once.
+                    _options = options;
+                    // Configuration object is deep cloned here.
+                    // Then, if properties are changed during the flow, the content of the original object is not changed.
+                    _config = new fi.fmi.metoclient.ui.animator.Factory(_.cloneDeep(options.config || fi.fmi.metoclient.ui.animator.Config, cloneDeepCallback));
+                    // Start asynchronous initialization.
+                    _config.init(function(factory, errors) {
+                        configInitCallback(options, errors);
+                    });
 
-                // Create animation structure for the content.
-                createStructure(options);
-
-                // Use options and configuration object to set map and layers.
-                setMapAndLayers();
-
-                // Create slider. Notice, this will set itself according to the options.
-                createController();
+                } catch(e) {
+                    // An error occurred in synchronous flow.
+                    // But, inform observer about the error asynchronously.
+                    // Then, flow progresses similarly through API in both
+                    // error and success cases.
+                    setTimeout(function() {
+                        var error = e.toString();
+                        if ("undefined" !== typeof console && console) {
+                            console.error("ERROR: Animator init error: " + error);
+                        }
+                        // Notice, options and config are not resetted before calling callback.
+                        // Then, error state remains. So, reset should be called before init
+                        // is requested again.
+                        handleCallback(options.callback, [error]);
+                    }, 0);
+                }
             }
-            return _me;
         }
 
         //=================================================================
@@ -1124,6 +1214,14 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         /**
          * Initialize animator with given options.
+         *
+         * Asynchronous function.
+         * Therefore, {options.callback} should always be provided to follow
+         * the progress of the operation even if it is not always mandatory.
+         * But, {options.callback} is mandatory if {options} is given and
+         * when {getConfig} function is used to highlight that asynchronous
+         * configuration operations should finish before {getConfig} is
+         * used.
          *
          * Notice, if animator should be reinitialized with new configuration,
          * {reset} should be called before calling {init} again.
@@ -1167,15 +1265,20 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          * Also notice, if {animatorContainerDivId} is given, it will always replace other div
          * options by default values.
          *
+         * Notice, callback is {function(animator, errors)}.
+         *      - animator: Reference to {this} animator. Always provided.
+         *      - errors: Array that contains possible errors that occurred during the flow.
+         *                Array is always provided even if it may be empty.
+         *
          * @param {Object} options { animatorContainerDivId: {String},
          *                           animationDivId: {String},
          *                           mapDivId: {String}, layerSwitcherDivId: {String},
          *                           controllerDivId : {String}, playAndPauseDivId : {String},
          *                           logoDivId : {String}, maximizeSwitcher: {Boolean},
          *                           legendDivId : {String},
-         *                           config : {Object} }
+         *                           config : {Object},
+         *                           callback : {Function(animator, errors)} }
          *                         May be {undefined} or {null}. But, then initialization is ignored.
-         * @return {this} Reference to this This instance.
          */
         this.init = init;
 
@@ -1208,8 +1311,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *
          * See, {fi.fmi.metoclient.ui.animator.Factory} API for more detailed description.
          *
+         * Notice, {options.callback} is mandatory if {options} is given for {init} function
+         * and if {getConfig} function is used. This is to highlight that asynchronous
+         * configuration operations should finish before {getConfig} is used.
+         *
          * @return {Object} Configuration API object.
-         *                  May be {undefined} if animator has not been initialized by calling {init}.
+         *                  May be {undefined} if animator has not been initialized
+         *                  by calling {init} with {options} object.
          */
         this.getConfig = getConfig;
 

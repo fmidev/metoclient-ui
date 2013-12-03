@@ -381,9 +381,14 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
 
         function getObsWidth() {
             var width = 0;
-            if (getForecastStartTime()) {
-                // Forecast start time is given. So, calculate the width.
-                width = _model && Math.floor((getEndTime() - getStartTime()) ? getScaleAreaWidth() * (getForecastStartTime() - getStartTime()) / (getEndTime() - getStartTime()) : 0);
+            var forecastStartTime = getForecastStartTime();
+            var startTime = getStartTime();
+            var endTime = getEndTime();
+            if (undefined !== forecastStartTime) {
+                if (_model && (endTime - startTime)) {
+                    // Forecast start time is given and width can be calculated.
+                    width = Math.floor(getScaleAreaWidth() * (forecastStartTime - startTime) / (endTime - startTime));
+                }
 
             } else {
                 // Observation takes the whole scale width if forecast is not used.

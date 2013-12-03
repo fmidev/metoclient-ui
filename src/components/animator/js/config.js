@@ -30,7 +30,12 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  *     // Array of layer configuration objects.
  *     // The structure of layer configuration objects are same as in map object above.
  *     // So, in layers array one layer configuration object contains {className} string parameter
- *     // and {args} array.
+ *     // and {args} array. Also, parameters for capability requests may be given in {capabilities}
+ *     // object that may also be left {undefined} if capability requests are not required.
+ *     // Capabilities {url} and {layer} are mandatory if capability requests are required.
+ *     // Capabilities data is required if "auto" or "join" strings are used with {beginTime} and
+ *     // {endTime} properties of layers and sub-layers.
+ *
  *     // For example, {className} could be "OpenLayers.Layer.WMS" string and {args} array may contain
  *     // string for name, string for URL, params object and options object.
  *     // See {OpenLayers.Layer.WMS} documentation for the arguments object structures.
@@ -40,9 +45,12 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  *     // {OpenLayers.Layer.Animation.WMS} contains animation configuration object inside options object.
  *     // {OpenLayers.Layer.Animation.WMTS} contains animation configuration object in the root level of
  *     // the configuration object.
- *     layers : [
- *         { className : {String}, args : [ {String|Object|etc}, ... ] },
- *         ... ],
+ *     layers :
+ *         [
+ *             { className : {String}, args : [ {String|Object|etc}, ... ],
+ *               capabilities : { url : {String}, layer : {String} } },
+ *             ...
+ *         ],
  *
  *     // Default zoom level is set for the map and layers when they are created.
  *     defaultZoomLevel : {Integer},
@@ -172,13 +180,23 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // Notice, we do not need to define default layer here again.
                 layers : [{
                     layer : "Weather:precipitation-forecast",
-                    // Forecasts are future data. So, begin time is from now.
-                    // Notice, beginTime is floored down to the nearest resolution.
-                    // Therefore, the date time is increased by ( resolution time - 1 )
-                    // to make sure that the floored beginTime refers to the future and
+                    // Forecasts are future data. So, begin time is from now if parent
+                    // layer provides frames up to present moment.
+                    //
+                    // Notice, {beginTime} is floored down to the nearest resolution.
+                    // Therefore, the date time should be increased by ( resolution time - 1 )
+                    // to make sure that the floored {beginTime} refers to the future and
                     // is on the proper resolution.
-                    beginTime : (new Date()).getTime() + 60 * 60 * 1000 - 1,
-                    // End time is not required if layer is meant for all times after beginTime.
+                    // For example, (new Date()).getTime() + 60 * 60 * 1000 - 1
+                    //
+                    // Also, notice "join" string may be used to take use of capabilities
+                    // information. Then, framework automatically checks the {endTime} for
+                    // the parent layer. The begin time of this sub-layer is calculated
+                    // by using parent layer {endTime} and by using resolution time to get
+                    // the next timestep. Notice, use of "join" requires that {capabilities}
+                    // object is defined for the layer in this configuration.
+                    beginTime : "join",
+                    // End time is not required if layer is meant for all times after {beginTime}.
                     endTime : undefined,
                     // Legend configuration is inherited from the parent animation object.
                     // Notice, legends can also be configured here to override parent
@@ -189,7 +207,13 @@ fi.fmi.metoclient.ui.animator.Config = {
                     // Then, the frame uses the name for the layer and
                     // the time period specific name is given when legend
                     // is requested via API.
-                    name : "Precipitation forecast"
+                    name : "Precipitation forecast",
+                    // Inform animator that this layer is forecast layer.
+                    // This flag may be used to inform that layer should be handled
+                    // as a forecast even if its frames would be from the past. Notice,
+                    // if parent layer is set as forecast, the sub-layer is automatically
+                    // handled as forecast.
+                    isForecast : true
                 }],
                 // Load automatically when layer is added to the map.
                 autoLoad : true,
@@ -201,9 +225,28 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // Then, the frame uses the name for the layer and
                 // the time period specific name is given when legend
                 // is requested via API.
-                name : "Precipitation"
+                name : "Precipitation",
+                // This flag may be used to inform that layer should be handled
+                // as a forecast even if its frames would be from the past.
+                // This property is shown here as an example and with value {false}
+                // which is also a default value and could therefore been left out.
+                isForecast : false
             }
-        }]
+        }],
+        // Capabilities object contains parameters for capability requests.
+        // Capabilities response provides information, for example, about the layer time
+        // period that can be used to automatically set begin and end times for animation
+        // layers by using "auto" and "join" strings. May be left undefined if capability
+        // requests are not required.
+        capabilities : {
+            // URL for capability requests.
+            // URL is mandatory if capability requests are required.
+            // Notice, FMI server may give CORS error for capability requests at the moment.
+            url : "http://insert-your-domain-here/fmi-apikey/insert-your-apikey-here/geoserver/wms",
+            // Layer identifier should be same as the identifier used with the layer object
+            // that wraps this capabilities object. Layer identifier is mandatory.
+            layer : "Radar:suomi_rr_eureffin"
+        }
     },
 
     // Another WMS animation layer.
@@ -246,13 +289,21 @@ fi.fmi.metoclient.ui.animator.Config = {
                 resolutionTime : 2 * 60 * 60 * 1000,
                 // Only observations should be shown for this layer
                 // because forecast data should not be available for this layer.
+                //
                 // Notice, unnecessary empty layer data is not requested
                 // from the server when end time is defined here.
-                // Also notice, endTime is ceiled on the next resolution time.
+                //
+                // Also notice, {endTime} is ceiled on the next resolution time.
                 // Therefore, the date time is decreased by ( resolution time - 1 )
-                // to make sure endTime refers to the observation and is on the
+                // to make sure {endTime} refers to the observation and is on the
                 // proper resolution.
-                endTime : (new Date()).getTime() - (2 * 60 * 60 * 1000 - 1),
+                // For example, (new Date()).getTime() - (2 * 60 * 60 * 1000 - 1)
+                //
+                // Also, notice "auto" string may be used to take use of capabilities
+                // information. Then, framework automatically checks the {endTime} for the layer.
+                // Notice, use of "auto" requires that {capabilities} object is defined for
+                // the layer in this configuration.
+                endTime : "auto",
                 // Fade-in may also be configured for animation if default is not good enough.
                 fadeIn : {
                     // For an example, fade-in time is set longer for this animation layer. Resolution
@@ -302,7 +353,21 @@ fi.fmi.metoclient.ui.animator.Config = {
             // Do not select this layer as default in layer switcher.
             // Notice, autoload above has no effect if this is false.
             visibility : false
-        }]
+        }],
+        // Capabilities object contains parameters for capability requests.
+        // Capabilities response provides information, for example, about the layer time
+        // period that can be used to automatically set begin and end times for animation
+        // layers by using "auto" and "join" strings. May be left undefined if capability
+        // requests are not required.
+        capabilities : {
+            // URL for capability requests.
+            // URL is mandatory if capability requests are required.
+            // Notice, FMI server may give CORS error for capability requests at the moment.
+            url : "http://insert-your-domain-here/fmi-apikey/insert-your-apikey-here/geoserver/wms",
+            // Layer identifier should be same as the identifier used with the layer object
+            // that wraps this capabilities object. Layer identifier is mandatory.
+            layer : "Radar:suomi_dbz_eureffin"
+        }
     },
 
     // Another WMS animation layer.
@@ -396,12 +461,14 @@ fi.fmi.metoclient.ui.animator.Config = {
     // timescale in places that there is no content loaded and to show.
     animationResolutionTime : 15 * 60 * 1000,
     // Animation begin delta time in ms from current time.
+    // Positive value is towards past.
     // Notice, time is floored to the resolution time.
     // Notice, zero is a special value here. Then, time
     // is ceiled to the resolution time because observed
     // data is not requested.
     animationDeltaToBeginTime : 8 * 60 * 60 * 1000 + 20 * 60 * 1000,
     // Animation end delta time in ms from current time.
+    // Positive value is towards future.
     // Notice, time is ceiled to the resolution time.
     // Notice, zero is a special value here. Then, time
     // is floored to the resolution time because future
