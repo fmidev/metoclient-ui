@@ -93,11 +93,11 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
      * and can be used for instantiation later.
      */
     var _constructor = function() {
-        // Reference to the connection instance object.
-        var _me = this;
-
         // Private variables.
         //-------------------
+
+        // Reference to this instance object.
+        var _me = this;
 
         // Options that contain for example div IDS.
         var _options;
@@ -257,9 +257,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 }
 
             } else {
-                // Create animation structure for the content.
-                createStructure(options);
-
                 // Use options and configuration object to set map and layers.
                 setMapAndLayers();
 
@@ -897,16 +894,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          * Set layers into the map.
          */
         function setMapAndLayers() {
-            if (_options.animationDivId) {
-                // Add progressbar element.
-                var loadProgressbar = jQuery('<div class="animatorLoadProgressbar"></div>');
-                jQuery("#" + _options.animationDivId).append(loadProgressbar);
-                loadProgressbar.progressbar({
-                    value : false
-                });
-                // Make sure progress bar element is hidden as default.
-                loadProgressbar.hide();
-            }
             if (_options.mapDivId) {
                 var map = _config.getMap();
                 if (map) {
@@ -1111,21 +1098,35 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *                         May be {undefined} or {null} but then operation is ignored.
          */
         function createStructure(options) {
-            // Default animator element structure is used and appended into container
-            // if options object provides animatorContainerDivId.
-            if (options && options.animatorContainerDivId) {
-                // Notice, this HTML structure is given in API comments in more readable format.
-                var defaultStructure = jQuery('<div class="animator"><div class="animatorAnimation" id="animatorAnimationId"><div class="animatorMap" id="animatorMapId"><div class="animatorLogo" id="animatorLogoId"></div><div class="animatorPlayAndPause" id="animatorPlayAndPauseId"></div></div><div class="animatorController" id="animatorControllerId"></div><div class="animatorLayerSwitcher" id="animatorLayerSwitcherId"></div></div><div class="animatorLegend" id="animatorLegendId"></div></div>');
-                jQuery("#" + options.animatorContainerDivId).append(defaultStructure);
-                // Set animator IDs for options because container is given and default should be used.
-                // Notice, if options contain some of the values, they are overwritten here.
-                options.animationDivId = "animatorAnimationId";
-                options.mapDivId = "animatorMapId";
-                options.layerSwitcherDivId = "animatorLayerSwitcherId";
-                options.controllerDivId = "animatorControllerId";
-                options.playAndPauseDivId = "animatorPlayAndPauseId";
-                options.logoDivId = "animatorLogoId";
-                options.legendDivId = "animatorLegendId";
+            if (options) {
+                // Default animator element structure is used and appended into container
+                // if options object provides animatorContainerDivId.
+                if (options.animatorContainerDivId) {
+                    // Notice, this HTML structure is given in API comments in more readable format.
+                    var defaultStructure = jQuery('<div class="animator"><div class="animatorAnimation" id="animatorAnimationId"><div class="animatorMap" id="animatorMapId"><div class="animatorLogo" id="animatorLogoId"></div><div class="animatorPlayAndPause" id="animatorPlayAndPauseId"></div></div><div class="animatorController" id="animatorControllerId"></div><div class="animatorLayerSwitcher" id="animatorLayerSwitcherId"></div></div><div class="animatorLegend" id="animatorLegendId"></div></div>');
+                    jQuery("#" + options.animatorContainerDivId).append(defaultStructure);
+                    // Set animator IDs for options because container is given and default should be used.
+                    // Notice, if options contain some of the values, they are overwritten here.
+                    options.animationDivId = "animatorAnimationId";
+                    options.mapDivId = "animatorMapId";
+                    options.layerSwitcherDivId = "animatorLayerSwitcherId";
+                    options.controllerDivId = "animatorControllerId";
+                    options.playAndPauseDivId = "animatorPlayAndPauseId";
+                    options.logoDivId = "animatorLogoId";
+                    options.legendDivId = "animatorLegendId";
+                }
+                // Progress bar is included into structure here.
+                // Then, it is available during asynchronous initializations.
+                if (options.animationDivId) {
+                    // Add progressbar element.
+                    var loadProgressbar = jQuery('<div class="animatorLoadProgressbar"></div>');
+                    jQuery("#" + options.animationDivId).append(loadProgressbar);
+                    loadProgressbar.progressbar({
+                        value : false
+                    });
+                    // Make sure progress bar element is hidden as default.
+                    loadProgressbar.hide();
+                }
             }
         }
 
@@ -1210,11 +1211,19 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 try {
                     // Set options and create config only once.
                     _options = options;
+                    // Create animation structure for the content.
+                    // Then, progressbar may be shown during asyncronous initializations.
+                    createStructure(options);
                     // Configuration object is deep cloned here.
                     // Then, if properties are changed during the flow, the content of the original object is not changed.
                     _config = new fi.fmi.metoclient.ui.animator.Factory(_.cloneDeep(options.config || fi.fmi.metoclient.ui.animator.Config, cloneDeepCallback));
                     // Start asynchronous initialization.
+                    // Also, show progressbar during asynchronous operation.
+                    jQuery(".animatorLoadProgressbar").show();
                     _config.init(function(factory, errors) {
+                        // Asynchronous initialization is over.
+                        // Hide the progressbar.
+                        jQuery(".animatorLoadProgressbar").hide();
                         configInitCallback(options, errors);
                     });
 
@@ -1227,6 +1236,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     if ("undefined" !== typeof console && console) {
                         console.error("ERROR: Animator init error: " + error);
                     }
+                    // Make sure progressbar is not left showing.
+                    jQuery(".animatorLoadProgressbar").hide();
                     // Notice, options and config are not resetted before calling callback.
                     // Then, error state remains. So, reset should be called before init
                     // is requested again.
