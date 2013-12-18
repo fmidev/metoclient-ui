@@ -64,14 +64,14 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  *     animationResolutionTime : {Integer},
  *
  *     // Animation begin delta time in ms from current time.
- *     // Notice, time is floored to the resolution time.
+ *     // Notice, begin time is floored to the resolution time.
  *     // Notice, zero is a special value here. Then, time
  *     // is ceiled to the resolution time because observed
  *     // data is not requested.
  *     animationDeltaToBeginTime : {Integer},
  *
  *    // Animation end delta time in ms from current time.
- *    // Notice, time is ceiled to the resolution time.
+ *    // Notice, end time is ceiled to the resolution time.
  *    // Notice, zero is a special value here. Then, time
  *    // is floored to the resolution time because future
  *    // data is not requested.
@@ -236,12 +236,15 @@ fi.fmi.metoclient.ui.animator.Config = {
         // Capabilities object contains parameters for capability requests.
         // Capabilities response provides information, for example, about the layer time
         // period that can be used to automatically set begin and end times for animation
-        // layers by using "auto" and "join" strings. May be left undefined if capability
-        // requests are not required.
+        // layers by using "auto" and "join" strings. May be left {undefined} if capability
+        // requests are not required. Notice, "auto" and "join" strings should not be
+        // used for the layer if {capabilities} is left {undefined}.
         capabilities : {
             // URL for capability requests.
             // URL is mandatory if capability requests are required.
             // Notice, FMI server may give CORS error for capability requests at the moment.
+            // If CORS error occurs, you may remove this {capabilities} property and replace
+            // "auto" and "join" strings from the layer by using a proper time value.
             url : "http://insert-your-domain-here/fmi-apikey/insert-your-apikey-here/geoserver/wms",
             // Layer identifier should be same as the identifier used with the layer object
             // that wraps this capabilities object. Layer identifier is mandatory.
@@ -358,11 +361,14 @@ fi.fmi.metoclient.ui.animator.Config = {
         // Capabilities response provides information, for example, about the layer time
         // period that can be used to automatically set begin and end times for animation
         // layers by using "auto" and "join" strings. May be left undefined if capability
-        // requests are not required.
+        // requests are not required. Notice, "auto" and "join" strings should not be
+        // used for the layer if {capabilities} is left {undefined}.
         capabilities : {
             // URL for capability requests.
             // URL is mandatory if capability requests are required.
             // Notice, FMI server may give CORS error for capability requests at the moment.
+            // If CORS error occurs, you may remove this {capabilities} property and replace
+            // "auto" and "join" strings from the layer by using a proper time value.
             url : "http://insert-your-domain-here/fmi-apikey/insert-your-apikey-here/geoserver/wms",
             // Layer identifier should be same as the identifier used with the layer object
             // that wraps this capabilities object. Layer identifier is mandatory.
@@ -459,20 +465,20 @@ fi.fmi.metoclient.ui.animator.Config = {
     // Also notice, if animation resolution is smaller than in any of the animations
     // in a certain time period, animation controller shows empty timesteps in the
     // timescale in places that there is no content loaded and to show.
-    animationResolutionTime : 15 * 60 * 1000,
+    animationResolutionTime : 30 * 60 * 1000,
     // Animation begin delta time in ms from current time.
     // Positive value is towards past.
-    // Notice, time is floored to the resolution time.
+    // Notice, begin time is floored to the resolution time.
     // Notice, zero is a special value here. Then, time
     // is ceiled to the resolution time because observed
     // data is not requested.
-    animationDeltaToBeginTime : 8 * 60 * 60 * 1000 + 20 * 60 * 1000,
+    animationDeltaToBeginTime : 3 * 60 * 60 * 1000,
     // Animation end delta time in ms from current time.
     // Positive value is towards future.
-    // Notice, time is ceiled to the resolution time.
+    // Notice, end time is ceiled to the resolution time.
     // Notice, zero is a special value here. Then, time
     // is floored to the resolution time because future
     // data is not requested.
-    animationDeltaToEndTime : 6 * 60 * 60 * 1000 + 20 * 60 * 1000
+    animationDeltaToEndTime : 2 * 60 * 60 * 1000
 
 };
