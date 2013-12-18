@@ -117,7 +117,7 @@
     background-image: url("img/fmi_logo.png");
     background-size: contain;
     background-repeat: no-repeat;
-    background-position: center;
+    background-position: right bottom;
     z-index: 9999999;
 }
 .animatorPlayAndPause {
@@ -130,7 +130,7 @@
     background-image: url("img/play.png");
     background-size: contain;
     background-repeat: no-repeat;
-    background-position: center;
+    background-position: left bottom;
     z-index: 9999999;
     opacity: 0.85;
 }
