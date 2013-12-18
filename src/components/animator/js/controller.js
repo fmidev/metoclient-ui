@@ -43,7 +43,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
      * @param {Object} height
      */
     var _constructor = function(element, width, height) {
-        var that = this;
+        var _me = this;
 
         // See init function for member variable initializations and descriptions.
 
@@ -720,7 +720,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _slider.push(_sliderLabel);
 
             // Set drag handlers.
-            _slider.drag(dragMove, startDragMove, finalizeDragMove, this, this, this);
+            _slider.drag(dragMove, startDragMove, finalizeDragMove, _me, _me, _me);
 
             // Reset initial time for label.
             resetSliderLabelText();

@@ -73,25 +73,28 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
     var KEY_ERROR_TEXT = "errorText";
 
     /**
-     * Handles the callback and possible error situations there.
+     * Asynchronously handles the callback and possible error situations there.
      *
      * @param {function(data, errors)} callback Callback function that is called.
+     *                                          Operation is ignored if {undefined} or {null}.
      * @param {Object} data Data that is provided for callback.
      *                      May be {undefined}, for example, if an error occurred.
      * @param [] errors Array that contains possible errors that occurred during the asynchronous flow.
      */
     function handleCallback(callback, data, errors) {
-        try {
-            if (callback) {
-                callback(data, errors);
-            }
+        if (callback) {
+            setTimeout(function() {
+                try {
+                    callback(data, errors);
 
-        } catch(e) {
-            // Ignore errors that may occur in the callback.
-            // Callback may be provided from outside of this library.
-            if ("undefined" !== typeof console && console) {
-                console.error("ERROR: Callback function error!");
-            }
+                } catch(e) {
+                    // Ignore errors that may occur in the callback.
+                    // Callback may be provided from outside of this library.
+                    if ("undefined" !== typeof console && console) {
+                        console.error("ERROR: Callback function error!");
+                    }
+                }
+            }, 0);
         }
     }
 
@@ -265,14 +268,12 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
                 // But, inform observer about the error asynchronously.
                 // Then, flow progresses similarly through API in both
                 // error and success cases.
-                setTimeout(function() {
-                    var error = {};
-                    error[KEY_ERROR_TEXT] = e.toString();
-                    if ("undefined" !== typeof console && console) {
-                        console.error("ERROR: Get data error: " + error[KEY_ERROR_TEXT]);
-                    }
-                    handleCallback(options.callback, undefined, [error]);
-                }, 0);
+                var error = {};
+                error[KEY_ERROR_TEXT] = e.toString();
+                if ("undefined" !== typeof console && console) {
+                    console.error("ERROR: Get data error: " + error[KEY_ERROR_TEXT]);
+                }
+                handleCallback(options.callback, undefined, [error]);
             }
 
         } else {
@@ -401,12 +402,6 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
 
 // "use strict";
 
-/**
- * This configuration factory JavaScript file provides map and layers objects
- * that framework uses for OpenLayers. This uses config file to create OpenLayers
- * map and layers.
- */
-
 // Requires OpenLayers
 if ( typeof OpenLayers === "undefined" || !OpenLayers) {
     throw "ERROR: OpenLayers is required for fi.fmi.metoclient.ui.animator.Factory!";
@@ -424,7 +419,18 @@ if ("undefined" === typeof fi.fmi.metoclient.ui.animator.WmsCapabilities || !fi.
 }
 
 /**
- * This provides the configuration map object and layers array that the framework uses for OpenLayers.
+ * This configuration factory provides the configuration map
+ * and layer objects that the framework uses for OpenLayers.
+ *
+ * Example:
+ * // Notice, configuration object may need to be deep cloned to make sure
+ * // factory does not change content of the original config object properties.
+ * var config = new fi.fmi.metoclient.ui.animator.Factory(
+ *                      _.cloneDeep(fi.fmi.metoclient.ui.animator.Config, cloneDeepCallback));
+ * // Start asynchronous initialization.
+ * config.init(function(factory, errors) {
+ *     // Initialization ready.
+ * });
  */
 fi.fmi.metoclient.ui.animator.Factory = (function() {
 
@@ -531,6 +537,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
     var _constructor = function(configuration) {
         // Private member variables.
         //--------------------------
+        var _me = this;
 
         // Map and layer configuration object.
         var _config = configuration;
@@ -622,23 +629,25 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         };
 
         /**
-         * Handles the callback and possible error situations there.
+         * Asynchronously handles the callback and possible error situations there.
          *
          * @param {function(data, errors)} callback Callback function that is called.
          *                                          Operation is ignored if {undefined} or {null}.
          */
         var handleCallback = function(callback) {
-            try {
-                if (callback) {
-                    callback(this, _errors);
-                }
+            if (callback) {
+                setTimeout(function() {
+                    try {
+                        callback(_me, _errors);
 
-            } catch(e) {
-                // Ignore errors that may occur in the callback.
-                // Callback may be provided from outside of this library.
-                if ("undefined" !== typeof console && console) {
-                    console.error("ERROR: Callback function error!");
-                }
+                    } catch(e) {
+                        // Ignore errors that may occur in the callback.
+                        // Callback may be provided from outside of this library.
+                        if ("undefined" !== typeof console && console) {
+                            console.error("ERROR: Callback function error!");
+                        }
+                    }
+                }, 0);
             }
         };
 
@@ -1468,14 +1477,12 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                 // But, inform observer about the error asynchronously.
                 // Then, flow progresses similarly through API in both
                 // error and success cases.
-                setTimeout(function() {
-                    var error = e.toString();
-                    if ("undefined" !== typeof console && console) {
-                        console.error("ERROR: Factory init error: " + error);
-                    }
-                    _errors.push(error);
-                    handleCallback(callback);
-                }, 0);
+                var error = e.toString();
+                if ("undefined" !== typeof console && console) {
+                    console.error("ERROR: Factory init error: " + error);
+                }
+                _errors.push(error);
+                handleCallback(callback);
             }
         }
 
@@ -1622,7 +1629,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
      * @param {Object} height
      */
     var _constructor = function(element, width, height) {
-        var that = this;
+        var _me = this;
 
         // See init function for member variable initializations and descriptions.
 
@@ -2299,7 +2306,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _slider.push(_sliderLabel);
 
             // Set drag handlers.
-            _slider.drag(dragMove, startDragMove, finalizeDragMove, this, this, this);
+            _slider.drag(dragMove, startDragMove, finalizeDragMove, _me, _me, _me);
 
             // Reset initial time for label.
             resetSliderLabelText();
@@ -2430,6 +2437,25 @@ if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Controller || !fi.fmi.m
 /**
  * API functions are defined in the end of the constructor as priviledged functions.
  * See API description there.
+ *
+ * Example:
+ * (new fi.fmi.metoclient.ui.animator.Animator()).init({
+ *     // Animator content is inserted into container.
+ *     // Default animator element structures are used here.
+ *     animatorContainerDivId : "animatorContainerId",
+ *     // Configuration defines map and layers for animator.
+ *     // Notice, fi.fmi.metoclient.ui.animator.Config object is also used
+ *     // as a default if config is not provided. But, this is shown here
+ *     // as an example. Another config object may also be provided here.
+ *     // See comments in fi.fmi.metoclient.ui.animator.Config for more detailed
+ *     // description of the config object.
+ *     config : fi.fmi.metoclient.ui.animator.Config,
+ *     // Callback is mandatory if getConfig function needs to be used.
+ *     callback : function(animator, errors) {
+ *         // For example, animator map object may be used after initialization.
+ *         var map = animator.getConfig().getMap();
+ *     }
+ * });
  */
 fi.fmi.metoclient.ui.animator.Animator = (function() {
 
@@ -2509,7 +2535,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // OpenLayers Animation events and corresponding callbacks.
         // Animation events are forwarded to these functions.
         var _events = {
-            scope : this,
+            scope : _me,
             // These are defined here to show which events are used.
             // Actual functions are set for these parameters later.
             animationloadstarted : undefined,
@@ -2588,7 +2614,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         //-------------------
 
         /**
-         * Handles the callback and possible error situations there.
+         * Asynchronously handles the callback and possible error situations there.
          *
          * @param {function(data, errors)} callback Callback function that is called.
          *                                          Operation is ignored if {undefined} or {null}.
@@ -2596,17 +2622,19 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *                  May be {undefined} or {null}.
          */
         var handleCallback = function(callback, errors) {
-            try {
-                if (callback) {
-                    callback(this, errors);
-                }
+            if (callback) {
+                setTimeout(function() {
+                    try {
+                        callback(_me, errors);
 
-            } catch(e) {
-                // Ignore errors that may occur in the callback.
-                // Callback may be provided from outside of this library.
-                if ("undefined" !== typeof console && console) {
-                    console.error("ERROR: Callback function error!");
-                }
+                    } catch(e) {
+                        // Ignore errors that may occur in the callback.
+                        // Callback may be provided from outside of this library.
+                        if ("undefined" !== typeof console && console) {
+                            console.error("ERROR: Callback function error!");
+                        }
+                    }
+                }, 0);
             }
         };
 
@@ -3528,6 +3556,14 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             // corresponding event is launched here by a separate call to
             // make sure all the necessary components are resized if necessary.
             jQuery(window).resize();
+
+            // Also, make sure map is updated properly.
+            if (_config) {
+                var map = _config.getMap();
+                if (map) {
+                    map.updateSize();
+                }
+            }
         }
 
         /**
@@ -3587,16 +3623,14 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     // But, inform observer about the error asynchronously.
                     // Then, flow progresses similarly through API in both
                     // error and success cases.
-                    setTimeout(function() {
-                        var error = e.toString();
-                        if ("undefined" !== typeof console && console) {
-                            console.error("ERROR: Animator init error: " + error);
-                        }
-                        // Notice, options and config are not resetted before calling callback.
-                        // Then, error state remains. So, reset should be called before init
-                        // is requested again.
-                        handleCallback(options.callback, [error]);
-                    }, 0);
+                    var error = e.toString();
+                    if ("undefined" !== typeof console && console) {
+                        console.error("ERROR: Animator init error: " + error);
+                    }
+                    // Notice, options and config are not resetted before calling callback.
+                    // Then, error state remains. So, reset should be called before init
+                    // is requested again.
+                    handleCallback(options.callback, [error]);
                 }
             }
         }
@@ -3688,6 +3722,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *
          * This function is provided to make sure that all the animator components, such as
          * the animation controller, are resized properly if container dimensions are changed.
+         *
+         * {OpenLayers.Map.updateSize} function is also automatically called to refresh the map.
          *
          * Notice, window resize is handled automatically. But, this function needs to be called
          * if animator elements are resized separately and window resize event is not launched.

@@ -55,7 +55,12 @@
                     // as an example. Another config object may also be provided here.
                     // See comments in fi.fmi.metoclient.ui.animator.Config for more detailed
                     // description of the config object.
-                    config : fi.fmi.metoclient.ui.animator.Config
+                    config : fi.fmi.metoclient.ui.animator.Config,
+                    // Callback is mandatory if getConfig function needs to be used.
+                    callback : function(animator, errors) {
+                        // For example, animator map object is available after initialization.
+                        var map = animator.getConfig().getMap();
+                    }
                 });
             });
         </script>

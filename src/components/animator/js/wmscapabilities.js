@@ -70,25 +70,28 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
     var KEY_ERROR_TEXT = "errorText";
 
     /**
-     * Handles the callback and possible error situations there.
+     * Asynchronously handles the callback and possible error situations there.
      *
      * @param {function(data, errors)} callback Callback function that is called.
+     *                                          Operation is ignored if {undefined} or {null}.
      * @param {Object} data Data that is provided for callback.
      *                      May be {undefined}, for example, if an error occurred.
      * @param [] errors Array that contains possible errors that occurred during the asynchronous flow.
      */
     function handleCallback(callback, data, errors) {
-        try {
-            if (callback) {
-                callback(data, errors);
-            }
+        if (callback) {
+            setTimeout(function() {
+                try {
+                    callback(data, errors);
 
-        } catch(e) {
-            // Ignore errors that may occur in the callback.
-            // Callback may be provided from outside of this library.
-            if ("undefined" !== typeof console && console) {
-                console.error("ERROR: Callback function error!");
-            }
+                } catch(e) {
+                    // Ignore errors that may occur in the callback.
+                    // Callback may be provided from outside of this library.
+                    if ("undefined" !== typeof console && console) {
+                        console.error("ERROR: Callback function error!");
+                    }
+                }
+            }, 0);
         }
     }
 
@@ -262,14 +265,12 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
                 // But, inform observer about the error asynchronously.
                 // Then, flow progresses similarly through API in both
                 // error and success cases.
-                setTimeout(function() {
-                    var error = {};
-                    error[KEY_ERROR_TEXT] = e.toString();
-                    if ("undefined" !== typeof console && console) {
-                        console.error("ERROR: Get data error: " + error[KEY_ERROR_TEXT]);
-                    }
-                    handleCallback(options.callback, undefined, [error]);
-                }, 0);
+                var error = {};
+                error[KEY_ERROR_TEXT] = e.toString();
+                if ("undefined" !== typeof console && console) {
+                    console.error("ERROR: Get data error: " + error[KEY_ERROR_TEXT]);
+                }
+                handleCallback(options.callback, undefined, [error]);
             }
 
         } else {

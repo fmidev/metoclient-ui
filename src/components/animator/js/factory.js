@@ -1,11 +1,5 @@
 "use strict";
 
-/**
- * This configuration factory JavaScript file provides map and layers objects
- * that framework uses for OpenLayers. This uses config file to create OpenLayers
- * map and layers.
- */
-
 // Requires OpenLayers
 if ( typeof OpenLayers === "undefined" || !OpenLayers) {
     throw "ERROR: OpenLayers is required for fi.fmi.metoclient.ui.animator.Factory!";
@@ -23,7 +17,18 @@ if ("undefined" === typeof fi.fmi.metoclient.ui.animator.WmsCapabilities || !fi.
 }
 
 /**
- * This provides the configuration map object and layers array that the framework uses for OpenLayers.
+ * This configuration factory provides the configuration map
+ * and layer objects that the framework uses for OpenLayers.
+ *
+ * Example:
+ * // Notice, configuration object may need to be deep cloned to make sure
+ * // factory does not change content of the original config object properties.
+ * var config = new fi.fmi.metoclient.ui.animator.Factory(
+ *                      _.cloneDeep(fi.fmi.metoclient.ui.animator.Config, cloneDeepCallback));
+ * // Start asynchronous initialization.
+ * config.init(function(factory, errors) {
+ *     // Initialization ready.
+ * });
  */
 fi.fmi.metoclient.ui.animator.Factory = (function() {
 
@@ -130,6 +135,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
     var _constructor = function(configuration) {
         // Private member variables.
         //--------------------------
+        var _me = this;
 
         // Map and layer configuration object.
         var _config = configuration;
@@ -221,23 +227,25 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         };
 
         /**
-         * Handles the callback and possible error situations there.
+         * Asynchronously handles the callback and possible error situations there.
          *
          * @param {function(data, errors)} callback Callback function that is called.
          *                                          Operation is ignored if {undefined} or {null}.
          */
         var handleCallback = function(callback) {
-            try {
-                if (callback) {
-                    callback(this, _errors);
-                }
+            if (callback) {
+                setTimeout(function() {
+                    try {
+                        callback(_me, _errors);
 
-            } catch(e) {
-                // Ignore errors that may occur in the callback.
-                // Callback may be provided from outside of this library.
-                if ("undefined" !== typeof console && console) {
-                    console.error("ERROR: Callback function error!");
-                }
+                    } catch(e) {
+                        // Ignore errors that may occur in the callback.
+                        // Callback may be provided from outside of this library.
+                        if ("undefined" !== typeof console && console) {
+                            console.error("ERROR: Callback function error!");
+                        }
+                    }
+                }, 0);
             }
         };
 
@@ -1067,14 +1075,12 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                 // But, inform observer about the error asynchronously.
                 // Then, flow progresses similarly through API in both
                 // error and success cases.
-                setTimeout(function() {
-                    var error = e.toString();
-                    if ("undefined" !== typeof console && console) {
-                        console.error("ERROR: Factory init error: " + error);
-                    }
-                    _errors.push(error);
-                    handleCallback(callback);
-                }, 0);
+                var error = e.toString();
+                if ("undefined" !== typeof console && console) {
+                    console.error("ERROR: Factory init error: " + error);
+                }
+                _errors.push(error);
+                handleCallback(callback);
             }
         }
 
