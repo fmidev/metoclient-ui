@@ -129,6 +129,26 @@ fi.fmi.metoclient.ui.animator.Config = {
 
     // WMS animation layer.
     {
+        // Capabilities object contains parameters for capability requests.
+        // Capabilities response provides information, for example, about the layer time
+        // period that can be used to automatically set begin and end times for animation
+        // layers by using "auto" and "join" strings. May be left {undefined} if capability
+        // requests are not required. Notice, "auto" and "join" strings should not be
+        // used for the layer if {capabilities} is left {undefined}.
+        //
+        // Also notice, FMI server may give CORS error for capability requests at the moment.
+        // If CORS error occurs, you may remove this {capabilities} property and replace
+        // "auto" and "join" strings from the layer by using a proper time value.
+        //
+        // capabilities : {
+        //     // URL for capability requests.
+        //     // URL is mandatory if capability requests are required.
+        //     url : "http://wms.fmi.fi/fmi-apikey/insert-your-apikey-here/geoserver/wms",
+        //     // Layer identifier should be same as the identifier used with the layer object
+        //     // that wraps this capabilities object. Layer identifier is mandatory.
+        //     layer : "Radar:suomi_rr_eureffin"
+        // },
+        //
         // Class name defines the class for the layer.
         // Framework will instantiate this class with args given below.
         className : "OpenLayers.Layer.Animation.Wms",
@@ -189,13 +209,17 @@ fi.fmi.metoclient.ui.animator.Config = {
                     // is on the proper resolution.
                     // For example, (new Date()).getTime() + 60 * 60 * 1000 - 1
                     //
-                    // Also, notice "join" string may be used to take use of capabilities
-                    // information. Then, framework automatically checks the {endTime} for
-                    // the parent layer. The begin time of this sub-layer is calculated
-                    // by using parent layer {endTime} and by using resolution time to get
-                    // the next timestep. Notice, use of "join" requires that {capabilities}
-                    // object is defined for the layer in this configuration.
-                    beginTime : "join",
+                    // Sometimes it may take a while before the latest observation data
+                    // is available in the server. Then, forecast data from the past should
+                    // be shown instead. In that case, "join" string may be provided to take
+                    // use of capabilities information. Then, the framework automatically checks
+                    // the {endTime} for the parent layer and the begin time of this sub-layer
+                    // is calculated by using parent layer {endTime} and by using resolution
+                    // time to get the next timestep. Notice, use of "join" requires that
+                    // {capabilities} object is defined for the layer in this configuration.
+                    //
+                    // beginTime : "join",
+                    beginTime : (new Date()).getTime() + 60 * 60 * 1000 - 1,
                     // End time is not required if layer is meant for all times after {beginTime}.
                     endTime : undefined,
                     // Legend configuration is inherited from the parent animation object.
@@ -232,28 +256,31 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // which is also a default value and could therefore been left out.
                 isForecast : false
             }
-        }],
+        }]
+    },
+
+    // Another WMS animation layer.
+    {
         // Capabilities object contains parameters for capability requests.
         // Capabilities response provides information, for example, about the layer time
         // period that can be used to automatically set begin and end times for animation
         // layers by using "auto" and "join" strings. May be left {undefined} if capability
         // requests are not required. Notice, "auto" and "join" strings should not be
         // used for the layer if {capabilities} is left {undefined}.
-        capabilities : {
-            // URL for capability requests.
-            // URL is mandatory if capability requests are required.
-            // Notice, FMI server may give CORS error for capability requests at the moment.
-            // If CORS error occurs, you may remove this {capabilities} property and replace
-            // "auto" and "join" strings from the layer by using a proper time value.
-            url : "http://insert-your-domain-here/fmi-apikey/insert-your-apikey-here/geoserver/wms",
-            // Layer identifier should be same as the identifier used with the layer object
-            // that wraps this capabilities object. Layer identifier is mandatory.
-            layer : "Radar:suomi_rr_eureffin"
-        }
-    },
-
-    // Another WMS animation layer.
-    {
+        //
+        // Also notice, FMI server may give CORS error for capability requests at the moment.
+        // If CORS error occurs, you may remove this {capabilities} property and replace
+        // "auto" and "join" strings from the layer by using a proper time value.
+        //
+        // capabilities : {
+        //     // URL for capability requests.
+        //     // URL is mandatory if capability requests are required.
+        //     url : "http://wms.fmi.fi/fmi-apikey/insert-your-apikey-here/geoserver/wms",
+        //     // Layer identifier should be same as the identifier used with the layer object
+        //     // that wraps this capabilities object. Layer identifier is mandatory.
+        //     layer : "Radar:suomi_dbz_eureffin"
+        // },
+        //
         className : "OpenLayers.Layer.Animation.Wms",
         args : [
         // Layer name.
@@ -306,7 +333,9 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // information. Then, framework automatically checks the {endTime} for the layer.
                 // Notice, use of "auto" requires that {capabilities} object is defined for
                 // the layer in this configuration.
-                endTime : "auto",
+                //
+                // endTime : "auto",
+                endTime : (new Date()).getTime() - (2 * 60 * 60 * 1000 - 1),
                 // Fade-in may also be configured for animation if default is not good enough.
                 fadeIn : {
                     // For an example, fade-in time is set longer for this animation layer. Resolution
@@ -356,24 +385,7 @@ fi.fmi.metoclient.ui.animator.Config = {
             // Do not select this layer as default in layer switcher.
             // Notice, autoload above has no effect if this is false.
             visibility : false
-        }],
-        // Capabilities object contains parameters for capability requests.
-        // Capabilities response provides information, for example, about the layer time
-        // period that can be used to automatically set begin and end times for animation
-        // layers by using "auto" and "join" strings. May be left undefined if capability
-        // requests are not required. Notice, "auto" and "join" strings should not be
-        // used for the layer if {capabilities} is left {undefined}.
-        capabilities : {
-            // URL for capability requests.
-            // URL is mandatory if capability requests are required.
-            // Notice, FMI server may give CORS error for capability requests at the moment.
-            // If CORS error occurs, you may remove this {capabilities} property and replace
-            // "auto" and "join" strings from the layer by using a proper time value.
-            url : "http://insert-your-domain-here/fmi-apikey/insert-your-apikey-here/geoserver/wms",
-            // Layer identifier should be same as the identifier used with the layer object
-            // that wraps this capabilities object. Layer identifier is mandatory.
-            layer : "Radar:suomi_dbz_eureffin"
-        }
+        }]
     },
 
     // Another WMS animation layer.
