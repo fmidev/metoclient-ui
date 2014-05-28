@@ -24,6 +24,11 @@
 // Strict mode for whole file.
 "use strict";
 
+// Requires lo-dash
+if ("undefined" === typeof _ || !_) {
+    throw "ERROR: Lo-Dash is required for fi.fmi.metoclient.ui.animator.WmsCapabilities!";
+}
+
 // Requires OpenLayers
 if ("undefined" === typeof OpenLayers || !OpenLayers) {
     throw "ERROR: OpenLayers is required for fi.fmi.metoclient.ui.animator.WmsCapabilities!";
@@ -37,24 +42,12 @@ fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
 fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
 
 /**
- * WmsCapabilities object acts as an interface that provides functions
- * to asynchronously request WMS capabilities XML data from the server
- * and to get the requested data in a parsed structure.
+ * WmsCapabilities object provides functions to asynchronously request
+ * WMS capabilities XML data from the server and to get the requested
+ * data in a parsed structure.
  *
  * WmsCapabilities itself is stateless. It only provides API functions
  * to start asynchronous flows that can be followed by callback functions.
- *
- * Example:
- * fi.fmi.metoclient.ui.animator.WmsCapabilities.getData(
- *     {
- *         url : "http://wms.fmi.fi/fmi-apikey/insert-your-apikey-here/geoserver/wms",
- *         callback: function(data, errors) {
- *             var layer = fi.fmi.metoclient.ui.animator.WmsCapabilities.getLayer(data, "Weather:temperature");
- *             var begin = fi.fmi.metoclient.ui.animator.WmsCapabilities.getBeginTime(layer);
- *             var end = fi.fmi.metoclient.ui.animator.WmsCapabilities.getEndTime(layer);
- *             var allLayerTimes = fi.fmi.metoclient.ui.animator.WmsCapabilities.getLayerTimes(layer);
- *         }
- *     });
  *
  * See API description in the end of the function.
  */
@@ -81,48 +74,52 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
     function handleCallback(callback, data, errors) {
         if (callback) {
             setTimeout(function() {
-                try {
-                    callback(data, errors);
-
-                } catch(e) {
-                    // Ignore errors that may occur in the callback.
-                    // Callback may be provided from outside of this library.
-                    if ("undefined" !== typeof console && console) {
-                        console.error("ERROR: Callback function error!");
-                    }
-                }
+                callback(data, errors);
             }, 0);
         }
     }
 
     /**
-     * Request capability data from the server.
-     *
-     * Operation is asynchronous.
-     *
-     * This function provides the actual implementation for the API functions
-     * that request parsed data.
-     *
-     * @param {Object} options Options for capability request.
-     *                         {options} and {options.callback} may not be {undefined} or {null}.
-     *                         Exception is thrown if {options.url} is {undefined}, {null} or empty.
-     * @throws {String} Exception string is thrown if {options} does not contain proper information.
+     * See API for function description.
      */
-    function getParsedData(options) {
+    function isService(capabilitiesConfig) {
+        // Accept anything else if service is not WFS.
+        return capabilitiesConfig && capabilitiesConfig.url && !fi.fmi.metoclient.ui.animator.WfsCapabilities.isService(capabilitiesConfig);
+    }
+
+    /**
+     * See API for function description.
+     */
+    function getUniqueConfigs(capabilitiesConfigs, target) {
+        // WMS capabilities are URL specific.
+        // Notice, single WMS capabilities response may contain capabilities information
+        // for all the layers or for single workspace.
+        // Before adding configs to target, make sure only WMS service specific configurations are added here.
+        target.push.apply(target, _.uniq(_.filter(capabilitiesConfigs, function(config) {
+            return config && isService(config);
+        }), "url"));
+    }
+
+    /**
+     * See API for function description.
+     */
+    function getData(options) {
         var capabilities;
         var errors = [];
-        if (options.url) {
+        if (options.capabilities && options.capabilities.url) {
             var format = new OpenLayers.Format.WMSCapabilities();
-            var defaultParams = {
+            var params = {
                 SERVICE : DEFAULT_SERVICE,
                 VERSION : DEFAULT_VERSION,
                 REQUEST : DEFAULT_REQUEST
             };
+            // Merge params into the default object.
+            // Notice, options.params will replace default values if they overlap.
+            _.merge(params, options.params);
+
             OpenLayers.Request.GET({
-                url : options.url,
-                // If options contains params object it is used.
-                // Otherwise, use default values.
-                params : options.params || defaultParams,
+                url : options.capabilities.url,
+                params : params,
                 success : function(request) {
                     var doc = request.responseXML;
                     if (!doc || !doc.documentElement) {
@@ -150,137 +147,18 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
             // Throw an exception because of the synchronous error.
             // Then, this exception will be catched and handled properly by
             // the get data flow structure.
-            throw "ERROR: Empty URL!";
+            throw "ERROR: WMS capabilities configuration is missing URL!";
         }
     }
 
     /**
      * See API for function description.
      */
-    function getLayer(capabilities, layerName) {
-        var layer;
-        if (layerName && capabilities && capabilities.capability && capabilities.capability.layers) {
-            // Find layer from layers.
-            var layers = capabilities.capability.layers;
-            for (var i = 0; i < layers.length; ++i) {
-                var l = layers[i];
-                if (l && l.name === layerName) {
-                    // Match found.
-                    layer = l;
-                    break;
-                }
-            }
-        }
-        return layer;
-    }
-
-    /**
-     * See API for function description.
-     */
-    function getLayerTimes(layer) {
-        var times;
-        if (layer) {
-            var dimensions = layer.dimensions;
-            if (dimensions) {
-                var time = dimensions.time;
-                if (time) {
-                    times = time.values;
-                }
-            }
-        }
-        return times;
-    }
-
-    /**
-     * See API for function description.
-     */
-    function getBeginTime(layer) {
-        var time;
-        var times = getLayerTimes(layer);
-        if (times && times.length) {
-            time = times[0];
-            // Check if the time value is actually a string that combines
-            // begin and end time information into one string instead of
-            // providing separate time values for every step.
-            if (1 === times.length && undefined !== time && null !== time) {
-                // Make sure time is string before checking syntax.
-                time = time + "";
-                var timeSplits = time.split("/");
-                if (timeSplits.length) {
-                    // Begin time is the first part of the split.
-                    time = timeSplits[0];
-                }
-            }
-            time = new Date(time);
-        }
-        return time;
-    }
-
-    /**
-     * See API for function description.
-     */
-    function getEndTime(layer) {
-        var time;
-        var times = getLayerTimes(layer);
-        if (times && times.length) {
-            time = times[times.length - 1];
-            // Check if the time value is actually a string that combines
-            // begin and end time information into one string instead of
-            // providing separate time values for every step.
-            if (undefined !== time && null !== time && 1 === times.length) {
-                // Make sure time is string before checking syntax.
-                time = time + "";
-                var timeSplits = time.split("/");
-                if (timeSplits.length > 1) {
-                    // End time is the second part of the split.
-                    time = timeSplits[1];
-                }
-            }
-            time = new Date(time);
-        }
-        return time;
-    }
-
-    /**
-     * See API for function description.
-     */
-    function getRequestUrl(capabilities) {
-        var url;
-        if (capabilities && capabilities.capability && capabilities.capability.request && capabilities.capability.request.getcapabilities && capabilities.capability.request.getcapabilities.href) {
-            url = capabilities.capability.request.getcapabilities.href;
-        }
-        return url;
-    }
-
-    /**
-     * See API for function description.
-     */
-    function getData(options) {
-        if (options && options.callback) {
-            try {
-                getParsedData(options);
-
-            } catch(e) {
-                // An error occurred in synchronous flow.
-                // But, inform observer about the error asynchronously.
-                // Then, flow progresses similarly through API in both
-                // error and success cases.
-                var error = {};
-                error[KEY_ERROR_TEXT] = e.toString();
-                if ("undefined" !== typeof console && console) {
-                    console.error("ERROR: Get data error: " + error[KEY_ERROR_TEXT]);
-                }
-                handleCallback(options.callback, undefined, [error]);
-            }
-
-        } else {
-            // Callback is required. There is no reason to request data if it is not used somewhere.
-            var errorStr = "ERROR: Options object and callback function in it are mandatory!";
-            if ("undefined" !== typeof console && console) {
-                console.error(errorStr);
-            }
-            throw errorStr;
-        }
+    function getCapabilitiesConfigs(config, target) {
+        // Insert capabilities objects from config layers into the target array.
+        target.push.apply(target, _.map(_.filter(config.layers, function(layer) {
+            return layer && isService(layer.capabilities);
+        }), "capabilities"));
     }
 
     /**
@@ -291,7 +169,28 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
     return {
 
         /**
-         * Request data.
+         * Check if the given {capabilitiesConfig} describes WFS service.
+         *
+         * @param {Object} capabilitiesConfig Capabilities config object
+         *                                    from animator main configuration object.
+         *                                    May be {undefined} or {null}.
+         */
+        isService : isService,
+
+        /**
+         * Get unique capabilities config objects.
+         *
+         * Only one of the possible duplicates is inclued into {target}.
+         *
+         * @param {Object} capabilitiesConfigs Array for capabilities config objects
+         *                                     from animator main configuration object.
+         *                                     May not be {undefined} or {null}.
+         * @param {Array} target Unique config objects are included into {target} array.
+         */
+        getUniqueConfigs : getUniqueConfigs,
+
+        /**
+         * Request capability data from the server.
          *
          * Operation is asynchronous.
          *
@@ -320,9 +219,9 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
          *
          * @param {Object} options Mandatory. May not be {undefined} or {null}. Object structure:
          *     {
-         *         url : {String}
-         *               Mandatory property. May not be {undefined}, {null} or empty.
-         *               URL that is used for the capability request.
+         *         config : {Object}
+         *                   Mandatory property. May not be {undefined}, {null} or empty.
+         *                   Configuration content is used for the capability requests.
          *         params : {Object}
          *                  Params properties may be provided to replace default parameters used for the
          *                  capability request. Optional and may be {undefined} or {null} if default may
@@ -334,64 +233,21 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
          *                    If an error occurs, data is set {undefined} for the callback.
          *                    Possible errors are given inside the array that is always provided.
          *     }
+         * @throws {String} Exception string is thrown if {options} does not contain proper information.
          */
         getData : getData,
 
         /**
-         * Get URL that is used for capabilities request.
+         * Capabilities config objects provide information that is used to load capabilities content.
          *
-         * Notice, this may differ from the URL that is originally given for {getData}.
+         * This function makes WMS service specific checks when creating capabilities config objects.
          *
-         * @param {Object} capabilities Capabilities data object that is gotten by using {getData}.
-         *                              Operation is ignored if {undefined}, {null} or empty.
-         * @return {String} URL string that is used for given {capabilities}. May be {undefined}.
+         * @param {Object} config Animator main configuration object.
+         *                        May be {undefined} or {null}.
+         * @param {Array} target Target array for capabilities config objects that provide URLs that should be loaded
+         *                       before initializing the configuration. May not be {undefined} or {null}.
          */
-        getRequestUrl : getRequestUrl,
-
-        /**
-         * Get layer object that matches the given layer name.
-         *
-         * @param {Object} capabilities Capabilities object whose layers are searched through.
-         *                              Operation is ignored if {undefined} or {null}.
-         * @param {String} layerName Name of the layer that is searched for.
-         *                           For example, "Weather:temperature" if capability request
-         *                           URL did not contain service as part of the URL path.
-         *                           For example, "temperature" if service name was already
-         *                           included in request URL path.
-         *                           Operation is ignored if {undefined}, {null} or empty.
-         * @return {Object} Layer that matches the layer name. May be {undefined}.
-         */
-        getLayer : getLayer,
-
-        /**
-         * Get layer time values from the given {layer}.
-         *
-         * @param {Object} layer Layer object whose time values are requested.
-         *                       Layer may be gotten by using {getLayer} function.
-         *                       Operation is ignored if {undefined} or {null}.
-         * @return {Array} Array of time values from the matching layer. May be {undefined}.
-         */
-        getLayerTimes : getLayerTimes,
-
-        /**
-         * Get begin time of the given {layer}.
-         *
-         * @param {Object} layer Layer object whose begin time is requested.
-         *                       Layer may be gotten by using {getLayer} function.
-         *                       Operation is ignored if {undefined} or {null}.
-         * @return {Date} Date for begin time. May be {undefined}.
-         */
-        getBeginTime : getBeginTime,
-
-        /**
-         * Get end time of the given {layer}.
-         *
-         * @param {Object} layer Layer object whose end time is requested.
-         *                       Layer may be gotten by using {getLayer} function.
-         *                       Operation is ignored if {undefined} or {null}.
-         * @return {Date} Date for end time. May be {undefined}.
-         */
-        getEndTime : getEndTime
+        getCapabilitiesConfigs : getCapabilitiesConfigs
 
     };
 

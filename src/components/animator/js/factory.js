@@ -12,8 +12,12 @@ fi.fmi.metoclient = fi.fmi.metoclient || {};
 fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
 fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
 
-if ("undefined" === typeof fi.fmi.metoclient.ui.animator.WmsCapabilities || !fi.fmi.metoclient.ui.animator.WmsCapabilities) {
-    throw "ERROR: fi.fmi.metoclient.ui.animator.WmsCapabilities is required for fi.fmi.metoclient.ui.animator.Factory!";
+if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Utils || !fi.fmi.metoclient.ui.animator.Utils) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.Utils is required for fi.fmi.metoclient.ui.animator.Factory!";
+}
+
+if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Capabilities || !fi.fmi.metoclient.ui.animator.Capabilities) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.Capabilities is required for fi.fmi.metoclient.ui.animator.Factory!";
 }
 
 /**
@@ -42,42 +46,6 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
     // capabilities is used to get the proper begin time
     // for the sub-layer.
     var CAPABILITY_TIME_JOIN = "join";
-
-    /**
-     * @private
-     *
-     * Function to provide {bind} if an older browser does not support it natively.
-     *
-     * This will provide IE8+ support.
-     * See, https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
-     *
-     * This function is called during the construction of this singleton instance to make sure
-     * function is available.
-     */
-    (function() {
-        if (!Function.prototype.bind) {
-            Function.prototype.bind = function(oThis) {
-                if ("function" !== typeof this) {
-                    // closest thing possible to the ECMAScript 5 internal IsCallable function
-                    throw "Function.prototype.bind - what is trying to be bound is not callable";
-                }
-
-                var aArgs = Array.prototype.slice.call(arguments, 1);
-                var fToBind = this;
-                var fNOP = function() {
-                };
-                var fBound = function() {
-                    return fToBind.apply(this instanceof fNOP && oThis ? this : oThis, aArgs.concat(Array.prototype.slice.call(arguments)));
-                };
-
-                fNOP.prototype = this.prototype;
-                var FNOP = fNOP;
-                fBound.prototype = new FNOP();
-
-                return fBound;
-            };
-        }
-    })();
 
     /**
      * @private
@@ -142,8 +110,6 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
 
         // Error objects of asynchronous operations.
         var _errors = [];
-        // Async counter for on-going asynchronous operations.
-        var _asyncCounter = 0;
 
         // Capabilities data for configurations.
         // Capabilities objects wrap requested capabilities and
@@ -172,61 +138,6 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         //--------------------------
 
         /**
-         * Creates a constructor wrapper function that may be instantiated with {new}.
-         *
-         * @param {Function} constructor Constructor function.
-         *                               Operation ignored if {undefined} or {null}.
-         * @param {Array} args Arguments array that contains arguments that are given for the constructor.
-         *                     May be {undefined} or {null}.
-         * @return {Function} Wrapper function for constructor with given arguments.
-         *                    This can be used with {new} to instantiate.
-         *                    Notice, returned function needs to be surrounded with parentheses when {new} is used.
-         *                    For example, new (constructorWrapper(constructor, args));
-         */
-        var constructorWrapper = function(constructor, args) {
-            var wrapper;
-            if (constructor) {
-                var params = [constructor];
-                if (args) {
-                    params = params.concat(args);
-                }
-                wrapper = constructor.bind.apply(constructor, params);
-            }
-            return wrapper;
-        };
-
-        /**
-         * Create instance of the class with the given class name and arguments
-         *
-         * @param {String} className Name of the class to be instantiated.
-         *                           Operation ignored if {undefined}, {null} or empty.
-         * @param {Array} args Arguments array that contains arguments that are given for the constructor.
-         *                     May be {undefined} or {null}.
-         * @return {Object} New Instance of the class with given arguments.
-         */
-        var createInstance = function(className, args) {
-            var instance;
-            if (className) {
-                // Check namespaces of the class
-                // and create function that contains possible namespaces.
-                var nameArr = className.split(".");
-                var constructor = (window || this);
-                if (constructor) {
-                    for (var i = 0, len = nameArr.length; i < len; i++) {
-                        constructor = constructor[nameArr[i]];
-                    }
-                    if ("function" === typeof constructor) {
-                        // Function was successfully created.
-                        // Create instance with the given arguments.
-                        // Notice, parentheses are required around wrapper function.
-                        instance = new (constructorWrapper(constructor, args))();
-                    }
-                }
-            }
-            return instance;
-        };
-
-        /**
          * Asynchronously handles the callback and possible error situations there.
          *
          * @param {function(data, errors)} callback Callback function that is called.
@@ -250,53 +161,6 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         };
 
         /**
-         * @return {Array} Array of capability objects from the configuration object.
-         *                 Array is always given even if it may be empty.
-         */
-        function getConfigCapabilities() {
-            var capabilities = [];
-            if (_config && _config.layers && _config.layers.length) {
-                for (var i = 0; i < _config.layers.length; ++i) {
-                    var layer = _config.layers[i];
-                    if (layer) {
-                        var capability = layer.capabilities;
-                        if (capability) {
-                            capabilities.push(capability);
-                        }
-                    }
-                }
-            }
-            return capabilities;
-        }
-
-        /**
-         * @return {Array} Array of unique capability URL strings from the configuration object.
-         *                 Array is always given even if it may be empty.
-         */
-        function getConfigCapabilitiesUrls() {
-            var urls = [];
-            var capabilities = getConfigCapabilities();
-            for (var i = 0; i < capabilities.length; ++i) {
-                var capability = capabilities[i];
-                if (capability && capability.url) {
-                    // Check if an exactly same URL already exists.
-                    var urlExists = false;
-                    for (var j = 0; j < urls.length; ++j) {
-                        if (capability.url === urls[j]) {
-                            urlExists = true;
-                            break;
-                        }
-                    }
-                    if (!urlExists) {
-                        // Add new URL.
-                        urls.push(capability.url);
-                    }
-                }
-            }
-            return urls;
-        }
-
-        /**
          * @param {String} layer Layer identifier.
          *                       Operation is ignored if {undefined}, {null} or {empty}.
          * @param {String} url URL used for capability request.
@@ -304,7 +168,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          *                     is identified by the URL.
          *                     Operation is ignored if {undefined}, {null} or {empty}.
          * @return {Object} Layer from the loaded capabilities.
-         *                  See {fi.fmi.metoclient.ui.animator.WmsCapabilities.getLayer}.
+         *                  See {fi.fmi.metoclient.ui.animator.Capabilities.getLayer}.
          *                  May be {undefined} if layer is not found.
          */
         function getCapabilityLayer(layer, url) {
@@ -315,7 +179,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                     if (capas) {
                         var capabilities = capas.capabilities;
                         if (capabilities && url === capas.url) {
-                            var capaLayer = fi.fmi.metoclient.ui.animator.WmsCapabilities.getLayer(capabilities, layer);
+                            var capaLayer = fi.fmi.metoclient.ui.animator.Capabilities.getLayer(capabilities, layer);
                             // Notice, checking is finished if layer is found.
                             // There should be only one match and other URL matches should not exist
                             // in the capabilities array. But, continue search if layer is not found
@@ -458,13 +322,13 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         function checkAnimationConfigTimes(timeInfo, capabilityLayer, resolution) {
             if (timeInfo && capabilityLayer) {
                 if (timeInfo.beginTime === CAPABILITY_TIME_AUTO) {
-                    timeInfo.beginTime = fi.fmi.metoclient.ui.animator.WmsCapabilities.getBeginTime(capabilityLayer);
+                    timeInfo.beginTime = fi.fmi.metoclient.ui.animator.Capabilities.getBeginTime(capabilityLayer);
                     // Because begin times are floored on resolution when layers are created,
                     // make sure begin time is within capability limits by ceiling it here.
                     ceilDate(timeInfo.beginTime, resolution);
                 }
                 if (timeInfo.endTime === CAPABILITY_TIME_AUTO) {
-                    timeInfo.endTime = fi.fmi.metoclient.ui.animator.WmsCapabilities.getEndTime(capabilityLayer);
+                    timeInfo.endTime = fi.fmi.metoclient.ui.animator.Capabilities.getEndTime(capabilityLayer);
                     // Because end times are ceiled on resolution when layers are created,
                     // make sure end time is within capability limits by flooring it here.
                     floorDate(timeInfo.endTime, resolution);
@@ -509,7 +373,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                                     // Parent end time defines end time for the whole animation, including sub layers.
                                     // Join can not be done after whole animation. Instead, end time of the parent
                                     // capability needs to be used to join sub-animation into the middle of the animation.
-                                    subLayer.beginTime = fi.fmi.metoclient.ui.animator.WmsCapabilities.getEndTime(capabilityLayer);
+                                    subLayer.beginTime = fi.fmi.metoclient.ui.animator.Capabilities.getEndTime(capabilityLayer);
                                     if (undefined !== subLayer.beginTime) {
                                         // Notice, configuration animation resolution and capabilities resolution
                                         // may define different values. Animation may use greater resolution.
@@ -586,61 +450,21 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          *                       May be {undefined} or {null}.
          */
         function capabilitiesCallback(callback, capabilities, errors) {
-            if (_asyncCounter > 0) {
-                // Decrease the counter because an asynchronous operation has finished.
-                --_asyncCounter;
-            }
-
+            // Update error and capabilities content.
             if (capabilities) {
-                _capabilitiesContainer.push(capabilities);
+                _capabilitiesContainer.push.apply(_capabilitiesContainer, capabilities);
             }
             if (errors) {
-                // Update error and capabilities content.
                 _errors.push.apply(_errors, errors);
             }
 
-            // Check if all asynchronous operations have finished.
-            if (0 === _asyncCounter) {
-                // Just to be sure that if for some reason we come here twice,
-                // callback is only called the first time.
-                _asyncCounter = -1;
+            // Check and fine tune configuration before final callback
+            // to inform that capabilites are handled.
+            checkConfiguration();
 
-                // Check and fine tune configuration before final callback
-                // to inform that capabilites are handled.
-                checkConfiguration();
-
-                // All asynchronous operations have finished.
-                // Finish the flow by calling the callback.
-                handleCallback(callback);
-            }
-        }
-
-        /**
-         * Start asynchronous operation to get capabilitis data.
-         *
-         * @param {Function} callback See {initCapabilities} function for callback description.
-         * @param {String} url URL used for capability request.
-         *                     May not be {undefined}, {null} or empty.
-         */
-        function getCapabilitiesData(callback, url) {
-            // Callback for capabilities operations.
-            var optionsCallback = function(capabilities, errors) {
-                // Wrap capabilities related information into object.
-                var capabilitiesWrapper = {
-                    url : url,
-                    capabilities : capabilities
-                };
-                capabilitiesCallback(callback, capabilitiesWrapper, errors);
-            };
-
-            // Options to get capabilities data.
-            var options = {
-                url : url,
-                callback : optionsCallback
-            };
-
-            // Start asynchronous operation.
-            fi.fmi.metoclient.ui.animator.WmsCapabilities.getData(options);
+            // All asynchronous operations have finished.
+            // Finish the flow by calling the callback.
+            handleCallback(callback);
         }
 
         /**
@@ -651,44 +475,20 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * @param {Function} callback See {init} function for callback description.
          */
         function initCapabilities(callback) {
-            // Reset previous capabilities state.
-            _capabilitiesContainer = [];
-
-            // Exception handler function that is used inside the loop.
-            var handleExceptionInLoop = function(e) {
-                // An error has occurred in synchronous part before starting asynchronous operation.
-                // Handle the case as if asynchronous operation would have finished. Then, flow
-                // continues if another asynchronous operation is going on or about to be started.
-                // Otherwise, flow ends normally.
-                setTimeout(function() {
-                    capabilitiesCallback(callback, undefined, ["ERROR: Error init capabilities: " + e.toString()]);
-                }, 0);
+            // Callback for capabilities operations.
+            var optionsCallback = function(capabilities, errors) {
+                capabilitiesCallback(callback, capabilities, errors);
             };
 
-            // There may be multiple asynchronous operations started.
-            // Counter is initialized with the total count. Then, catch can
-            // handle synchronous exceptions as if asynchronous operation would
-            // have finished and one fail does not stop the whole flow if other
-            // asynchronous operations are going-on or about to be started.
-            var capabilitiesUrls = getConfigCapabilitiesUrls();
-            _asyncCounter = capabilitiesUrls.length;
-            if (capabilitiesUrls.length) {
-                for (var i = 0; i < capabilitiesUrls.length; ++i) {
-                    try {
-                        getCapabilitiesData(callback, capabilitiesUrls[i]);
+            // Options to get capabilities data.
+            var options = {
+                config : _config,
+                callback : optionsCallback
+            };
 
-                    } catch(e) {
-                        handleExceptionInLoop(e);
-                    }
-                }
-
-            } else {
-                // No capabilities to load.
-                // Finish flow asynchronously.
-                setTimeout(function() {
-                    capabilitiesCallback(callback, undefined, []);
-                }, 0);
-            }
+            // Start asynchronous operation.
+            // Multiple asynchronous operations may be started.
+            fi.fmi.metoclient.ui.animator.Capabilities.getData(options);
         }
 
         /**
@@ -844,7 +644,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                         options.theme = null;
                     }
                 }
-                _map = createInstance(_config.map.className, args);
+                _map = fi.fmi.metoclient.ui.animator.Utils.createInstance(_config.map.className, args);
             }
             return _map;
         }
@@ -907,7 +707,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                                 }
                             }
                         }
-                        layer = createInstance(config.className, config.args);
+                        layer = fi.fmi.metoclient.ui.animator.Utils.createInstance(config.className, config.args);
                     }
                     if (layer) {
                         _layers.push(layer);
@@ -1066,8 +866,11 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
             }
             try {
                 // Reset asynchronous operation variables before starting new flow.
-                _asyncCounter = 0;
                 _errors = [];
+
+                // Make sure container is empty when initialization is started.
+                _capabilitiesContainer = [];
+
                 initCapabilities(callback);
 
             } catch(e) {

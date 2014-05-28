@@ -49,7 +49,7 @@ module.exports = function(grunt) {
             components : {
                 files : {
                     // Animator
-                    'dist/components/animator/js/animator.js' : ['src/components/animator/js/wmscapabilities.js', 'src/components/animator/js/factory.js', 'src/components/animator/js/controller.js', 'src/components/animator/js/animator.js'],
+                    'dist/components/animator/js/animator.js' : ['src/components/animator/js/utils.js', 'src/components/animator/js/wmscapabilities.js', 'src/components/animator/js/wfscapabilities.js', 'src/components/animator/js/capabilities.js', 'src/components/animator/js/factory.js', 'src/components/animator/js/controller.js', 'src/components/animator/js/animator.js'],
                     'dist/components/animator/js/config.js' : ['src/components/animator/js/config.js'],
                     // Graph
                     'dist/components/graph/js/graph.js' : ['src/components/graph/js/timer.js', 'src/components/graph/js/controller.js', 'src/components/graph/js/graph.js'],
@@ -197,6 +197,7 @@ module.exports = function(grunt) {
                 "node" : true,
                 "globals" : {
                     "window" : true,
+                    "navigator" : true,
                     "document" : true,
                     "OpenLayers" : true,
                     "jQuery" : true,
@@ -205,7 +206,8 @@ module.exports = function(grunt) {
                     "fi" : true,
                     "requestAnimationFrame" : true,
                     "timezoneJS" : true,
-                    "CanvasRenderingContext2D" : true
+                    "CanvasRenderingContext2D" : true,
+                    "XDomainRequest" : true
                 }
             }
         },

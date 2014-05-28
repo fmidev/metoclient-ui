@@ -27,6 +27,335 @@
 // Strict mode for whole file.
 // "use strict";
 
+// Requires lodash
+if ("undefined" === typeof _ || !_) {
+    throw "ERROR: Lo-Dash is required for fi.fmi.metoclient.ui.animator.Utils!";
+}
+
+// "Package" definitions
+var fi = fi || {};
+fi.fmi = fi.fmi || {};
+fi.fmi.metoclient = fi.fmi.metoclient || {};
+fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
+fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
+
+/**
+ * Utils object initializes commonly needed functionality and provides API for general utility functions.
+ *
+ * There is no need to use {new} to create an instance of Utils.
+ * Internal functions are called during the construction of this sigleton instance.
+ * API functions provided by this object can be directly used.
+ */
+fi.fmi.metoclient.ui.animator.Utils = (function() {
+
+    /**
+     * Function to provide {bind} if an older browser does not support it natively.
+     *
+     * This will provide IE8+ support.
+     * See, https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+     *
+     * This function is called during the construction of this singleton instance to make sure
+     * function is available.
+     */
+    (function() {
+        if (!Function.prototype.bind) {
+            Function.prototype.bind = function(oThis) {
+                if ("function" !== typeof this) {
+                    // closest thing possible to the ECMAScript 5 internal IsCallable function
+                    throw "Function.prototype.bind - what is trying to be bound is not callable";
+                }
+
+                var aArgs = Array.prototype.slice.call(arguments, 1);
+                var fToBind = this;
+                var fNOP = function() {
+                };
+                var fBound = function() {
+                    return fToBind.apply(this instanceof fNOP && oThis ? this : oThis, aArgs.concat(Array.prototype.slice.call(arguments)));
+                };
+
+                fNOP.prototype = this.prototype;
+                var FNOP = fNOP;
+                fBound.prototype = new FNOP();
+
+                return fBound;
+            };
+        }
+    })();
+
+    /**
+     * Avoid console errors in browsers that lack a console.
+     *
+     * See: https://github.com/h5bp/html5-boilerplate/blob/master/js/plugins.js
+     */
+    (function() {
+        var method;
+        var noop = function() {
+        };
+        var methods = ['assert', 'clear', 'count', 'debug', 'dir', 'dirxml', 'error', 'exception', 'group', 'groupCollapsed', 'groupEnd', 'info', 'log', 'markTimeline', 'profile', 'profileEnd', 'table', 'time', 'timeEnd', 'timeStamp', 'trace', 'warn'];
+        var length = methods.length;
+        var console = (window.console = window.console || {});
+
+        while (length--) {
+            method = methods[length];
+
+            // Only stub undefined methods.
+            if (!console[method]) {
+                console[method] = noop;
+            }
+        }
+    })();
+
+    /**
+     * Function to set jQuery.browser information.
+     * See, http://stackoverflow.com/questions/14545023/jquery-1-9-browser-detection
+     */
+    (function() {
+        if (!jQuery.browser) {
+            var matched, browser;
+
+            // Use of jQuery.browser is frowned upon.
+            // More details: http://api.jquery.com/jQuery.browser
+            // jQuery.uaMatch maintained for back-compat
+            jQuery.uaMatch = function(ua) {
+                ua = ua.toLowerCase();
+
+                var match = /(chrome)[ \/]([\w.]+)/.exec(ua) || /(webkit)[ \/]([\w.]+)/.exec(ua) || /(opera)(?:.*version|)[ \/]([\w.]+)/.exec(ua) || /(msie) ([\w.]+)/.exec(ua) || ua.indexOf("compatible") < 0 && /(mozilla)(?:.*? rv:([\w.]+)|)/.exec(ua) || [];
+
+                return {
+                    browser : match[1] || "",
+                    version : match[2] || "0"
+                };
+            };
+
+            matched = jQuery.uaMatch(navigator.userAgent);
+            browser = {};
+
+            if (matched.browser) {
+                browser[matched.browser] = true;
+                browser.version = matched.version;
+            }
+
+            // Chrome is Webkit, but Webkit is also Safari.
+            if (browser.chrome) {
+                browser.webkit = true;
+
+            } else if (browser.webkit) {
+                browser.safari = true;
+            }
+
+            jQuery.browser = browser;
+        }
+    })();
+
+    /**
+     * This function is called during the construction of this sigleton
+     * instance to provide at least a limited support for cross-domain request (XDR)
+     * when jQuery.ajax is used for IE 8 and 9.
+     *
+     * IE 6, 7, 8, and 9 do not support XHR2 CORS.
+     * It is not possible to make generalized cross-domain requests in these browsers.
+     * IE 8, 9 support an ActiveX control called XDomainRequest that only allows limited
+     * cross-domain requests compared to XHR2 CORS. IE 10 supports XHR2 CORS.
+     *
+     * For more information about this, see following links:
+     *    https://github.com/jaubourg/ajaxHooks/blob/master/src/xdr.js
+     *    http://stackoverflow.com/questions/14309037/ajax-no-transport-error-in-ie-8-9
+     *    http://bugs.jquery.com/ticket/8283#comment:43
+     *    http://bugs.jquery.com/ticket/8283#comment:44
+     *    http://bugs.jquery.com/ticket/8283#comment:45
+     *
+     * jQuery does not include XDomainRequest support because there are numerous
+     * and serious limitations to XDR. Many reasonable $.ajax requests would fail,
+     * including any cross-domain request made on IE6 and IE7 which are otherwise
+     * supported by jQuery. Developers would be confused that their content types
+     * and headers were ignored, or that IE8 users could not use XDR if the user was
+     * using InPrivate browsing for example.
+     *
+     * Even the crippled XDR can be useful if it is used by a knowledgeable developer.
+     * A jQuery team member has made an XDR ajax transport available. You must be aware
+     * of XDR limitations by reading this blog post or ask someone who has dealt with
+     * XDR problems and can mentor you through its successful use.
+     *
+     * For further help and other solutions, ask on the jQuery Forum, StackOverflow,
+     * or search "jQuery xdr transport".
+     */
+    (function() {
+        if (window.XDomainRequest) {
+            jQuery.ajaxTransport(function(s) {
+                if (s.crossDomain && s.async) {
+                    if (s.timeout) {
+                        s.xdrTimeout = s.timeout;
+                        delete s.timeout;
+                    }
+                    var xdr;
+                    return {
+                        send : function(_, complete) {
+                            function callback(status, statusText, responses, responseHeaders) {
+                                xdr.onload = xdr.onerror = xdr.ontimeout = jQuery.noop;
+                                xdr = undefined;
+                                complete(status, statusText, responses, responseHeaders);
+                            }
+
+                            xdr = new XDomainRequest();
+                            xdr.onload = function() {
+                                callback(200, "OK", {
+                                    text : xdr.responseText
+                                }, "Content-Type: " + xdr.contentType);
+                            };
+                            xdr.onerror = function() {
+                                callback(404, "Not Found");
+                            };
+                            xdr.onprogress = jQuery.noop;
+                            xdr.ontimeout = function() {
+                                callback(0, "timeout");
+                            };
+                            xdr.timeout = s.xdrTimeout || Number.MAX_VALUE;
+                            xdr.open(s.type, s.url);
+                            xdr.send((s.hasContent && s.data ) || null);
+                        },
+                        abort : function() {
+                            if (xdr) {
+                                xdr.onerror = jQuery.noop;
+                                xdr.abort();
+                            }
+                        }
+                    };
+                }
+            });
+        }
+    })();
+
+    /**
+     * Function to set {toISOString} for {Date} objects if an older browser does not support it natively.
+     *
+     * See, http://stackoverflow.com/questions/11440569/converting-a-normal-date-to-iso-8601-format
+     *
+     * This function is called during the construction of this sigleton instance to make sure
+     * function is available.
+     */
+    (function() {
+        // Override only if native toISOString is not defined.
+        if (!Date.prototype.toISOString) {
+            // Rely on JSON serialization for dates because it matches
+            // the ISO standard. However, check if JSON serializer is present
+            // on a page and define own .toJSON method only if necessary.
+            if (!Date.prototype.toJSON) {
+                Date.prototype.toJSON = function(key) {
+                    var pad = function(n) {
+                        // Format integers to have at least two digits.
+                        return n < 10 ? '0' + n : n;
+                    };
+
+                    return this.getUTCFullYear() + '-' + pad(this.getUTCMonth() + 1) + '-' + pad(this.getUTCDate()) + 'T' + pad(this.getUTCHours()) + ':' + pad(this.getUTCMinutes()) + ':' + pad(this.getUTCSeconds()) + 'Z';
+                };
+            }
+
+            Date.prototype.toISOString = Date.prototype.toJSON;
+        }
+    })();
+
+    /**
+     * @private
+     *
+     * Creates a constructor wrapper function that may be instantiated with {new}.
+     *
+     * @param {Function} constructor Constructor function.
+     *                               Operation ignored if {undefined} or {null}.
+     * @param {Array} args Arguments array that contains arguments that are given for the constructor.
+     *                     May be {undefined} or {null}.
+     * @return {Function} Wrapper function for constructor with given arguments.
+     *                    This can be used with {new} to instantiate.
+     *                    Notice, returned function needs to be surrounded with parentheses when {new} is used.
+     *                    For example, new (constructorWrapper(constructor, args));
+     */
+    function constructorWrapper(constructor, args) {
+        var wrapper;
+        if (constructor) {
+            var params = [constructor];
+            if (args) {
+                params = params.concat(args);
+            }
+            wrapper = constructor.bind.apply(constructor, params);
+        }
+        return wrapper;
+    }
+
+    /**
+     * See API for function description.
+     */
+    var createInstance = function(className, args) {
+        var instance;
+        if (className) {
+            // Check namespaces of the class
+            // and create function that contains possible namespaces.
+            var nameArr = className.split(".");
+            var constructor = (window || this);
+            if (constructor) {
+                for (var i = 0, len = nameArr.length; i < len; i++) {
+                    constructor = constructor[nameArr[i]];
+                }
+                if ("function" === typeof constructor) {
+                    // Function was successfully created.
+                    // Create instance with the given arguments.
+                    // Notice, parentheses are required around wrapper function.
+                    instance = new (constructorWrapper(constructor, args))();
+                }
+            }
+        }
+        return instance;
+    };
+
+    /**
+     * Return Utils API as an object.
+     */
+    return {
+
+        /**
+         * Create instance of the class with the given class name and arguments
+         *
+         * @param {String} className Name of the class to be instantiated.
+         *                           Operation ignored if {undefined}, {null} or empty.
+         * @param {Array} args Arguments array that contains arguments that are given for the constructor.
+         *                     May be {undefined} or {null}.
+         * @return {Object} New Instance of the class with given arguments.
+         */
+        createInstance : createInstance
+
+    };
+
+})();
+
+/**
+ * This software may be freely distributed and used under the following MIT license:
+ *
+ * Copyright (c) 2013 Finnish Meteorological Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ * software and associated documentation files (the "Software"), to deal in the
+ * Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+// Strict mode for whole file.
+// "use strict";
+
+// Requires lo-dash
+if ("undefined" === typeof _ || !_) {
+    throw "ERROR: Lo-Dash is required for fi.fmi.metoclient.ui.animator.WmsCapabilities!";
+}
+
 // Requires OpenLayers
 if ("undefined" === typeof OpenLayers || !OpenLayers) {
     throw "ERROR: OpenLayers is required for fi.fmi.metoclient.ui.animator.WmsCapabilities!";
@@ -40,24 +369,12 @@ fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
 fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
 
 /**
- * WmsCapabilities object acts as an interface that provides functions
- * to asynchronously request WMS capabilities XML data from the server
- * and to get the requested data in a parsed structure.
+ * WmsCapabilities object provides functions to asynchronously request
+ * WMS capabilities XML data from the server and to get the requested
+ * data in a parsed structure.
  *
  * WmsCapabilities itself is stateless. It only provides API functions
  * to start asynchronous flows that can be followed by callback functions.
- *
- * Example:
- * fi.fmi.metoclient.ui.animator.WmsCapabilities.getData(
- *     {
- *         url : "http://wms.fmi.fi/fmi-apikey/insert-your-apikey-here/geoserver/wms",
- *         callback: function(data, errors) {
- *             var layer = fi.fmi.metoclient.ui.animator.WmsCapabilities.getLayer(data, "Weather:temperature");
- *             var begin = fi.fmi.metoclient.ui.animator.WmsCapabilities.getBeginTime(layer);
- *             var end = fi.fmi.metoclient.ui.animator.WmsCapabilities.getEndTime(layer);
- *             var allLayerTimes = fi.fmi.metoclient.ui.animator.WmsCapabilities.getLayerTimes(layer);
- *         }
- *     });
  *
  * See API description in the end of the function.
  */
@@ -84,48 +401,52 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
     function handleCallback(callback, data, errors) {
         if (callback) {
             setTimeout(function() {
-                try {
-                    callback(data, errors);
-
-                } catch(e) {
-                    // Ignore errors that may occur in the callback.
-                    // Callback may be provided from outside of this library.
-                    if ("undefined" !== typeof console && console) {
-                        console.error("ERROR: Callback function error!");
-                    }
-                }
+                callback(data, errors);
             }, 0);
         }
     }
 
     /**
-     * Request capability data from the server.
-     *
-     * Operation is asynchronous.
-     *
-     * This function provides the actual implementation for the API functions
-     * that request parsed data.
-     *
-     * @param {Object} options Options for capability request.
-     *                         {options} and {options.callback} may not be {undefined} or {null}.
-     *                         Exception is thrown if {options.url} is {undefined}, {null} or empty.
-     * @throws {String} Exception string is thrown if {options} does not contain proper information.
+     * See API for function description.
      */
-    function getParsedData(options) {
+    function isService(capabilitiesConfig) {
+        // Accept anything else if service is not WFS.
+        return capabilitiesConfig && capabilitiesConfig.url && !fi.fmi.metoclient.ui.animator.WfsCapabilities.isService(capabilitiesConfig);
+    }
+
+    /**
+     * See API for function description.
+     */
+    function getUniqueConfigs(capabilitiesConfigs, target) {
+        // WMS capabilities are URL specific.
+        // Notice, single WMS capabilities response may contain capabilities information
+        // for all the layers or for single workspace.
+        // Before adding configs to target, make sure only WMS service specific configurations are added here.
+        target.push.apply(target, _.uniq(_.filter(capabilitiesConfigs, function(config) {
+            return config && isService(config);
+        }), "url"));
+    }
+
+    /**
+     * See API for function description.
+     */
+    function getData(options) {
         var capabilities;
         var errors = [];
-        if (options.url) {
+        if (options.capabilities && options.capabilities.url) {
             var format = new OpenLayers.Format.WMSCapabilities();
-            var defaultParams = {
+            var params = {
                 SERVICE : DEFAULT_SERVICE,
                 VERSION : DEFAULT_VERSION,
                 REQUEST : DEFAULT_REQUEST
             };
+            // Merge params into the default object.
+            // Notice, options.params will replace default values if they overlap.
+            _.merge(params, options.params);
+
             OpenLayers.Request.GET({
-                url : options.url,
-                // If options contains params object it is used.
-                // Otherwise, use default values.
-                params : options.params || defaultParams,
+                url : options.capabilities.url,
+                params : params,
                 success : function(request) {
                     var doc = request.responseXML;
                     if (!doc || !doc.documentElement) {
@@ -153,7 +474,608 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
             // Throw an exception because of the synchronous error.
             // Then, this exception will be catched and handled properly by
             // the get data flow structure.
-            throw "ERROR: Empty URL!";
+            throw "ERROR: WMS capabilities configuration is missing URL!";
+        }
+    }
+
+    /**
+     * See API for function description.
+     */
+    function getCapabilitiesConfigs(config, target) {
+        // Insert capabilities objects from config layers into the target array.
+        target.push.apply(target, _.map(_.filter(config.layers, function(layer) {
+            return layer && isService(layer.capabilities);
+        }), "capabilities"));
+    }
+
+    /**
+     * ============================
+     * Public API is returned here.
+     * ============================
+     */
+    return {
+
+        /**
+         * Check if the given {capabilitiesConfig} describes WFS service.
+         *
+         * @param {Object} capabilitiesConfig Capabilities config object
+         *                                    from animator main configuration object.
+         *                                    May be {undefined} or {null}.
+         */
+        isService : isService,
+
+        /**
+         * Get unique capabilities config objects.
+         *
+         * Only one of the possible duplicates is inclued into {target}.
+         *
+         * @param {Object} capabilitiesConfigs Array for capabilities config objects
+         *                                     from animator main configuration object.
+         *                                     May not be {undefined} or {null}.
+         * @param {Array} target Unique config objects are included into {target} array.
+         */
+        getUniqueConfigs : getUniqueConfigs,
+
+        /**
+         * Request capability data from the server.
+         *
+         * Operation is asynchronous.
+         *
+         * Notice, callback is {function(data, errors)}.
+         *      - data: Data object provides capabilities data.
+         *              May be {undefined} if an error has occurred.
+         *              See {OpenLayers.Format.WMSCapabilities.read} function for the object structure.
+         *      - errors: Array that contains possible errors that occurred during the flow. Array is
+         *                always provided even if it may be empty. If an error occurs, an error string
+         *                is pushed here. Also, when an HTTP error occurs, error contains the textual
+         *                portion of the HTTP status, such as "Not Found" or "Internal Server Error."
+         *                Errors parameter is of this structure:
+         *          [
+         *              {
+         *                  // None, one, or more of the following error values may exist.
+         *                  // Values may also be {undefined} or {null}.
+         *                  errorCode : "errorCodeString",
+         *                  errorText : "errorTextString",
+         *                  extension : {Object}
+         *              },
+         *              ...
+         *          ]
+         *
+         * Notice, object properties of the function {options} parameter are URL encoded by this library
+         * before they are inserted into the request URL.
+         *
+         * @param {Object} options Mandatory. May not be {undefined} or {null}. Object structure:
+         *     {
+         *         config : {Object}
+         *                   Mandatory property. May not be {undefined}, {null} or empty.
+         *                   Configuration content is used for the capability requests.
+         *         params : {Object}
+         *                  Params properties may be provided to replace default parameters used for the
+         *                  capability request. Optional and may be {undefined} or {null} if default may
+         *                  be used. But, should not be empty if the object is given.
+         *         callback : {function(capabilities, errors)}
+         *                    Mandatory property. May not be {undefined} or {null}.
+         *                    Callback is called with the parsed capabilities data
+         *                    and errors array when operation finishes.
+         *                    If an error occurs, data is set {undefined} for the callback.
+         *                    Possible errors are given inside the array that is always provided.
+         *     }
+         * @throws {String} Exception string is thrown if {options} does not contain proper information.
+         */
+        getData : getData,
+
+        /**
+         * Capabilities config objects provide information that is used to load capabilities content.
+         *
+         * This function makes WMS service specific checks when creating capabilities config objects.
+         *
+         * @param {Object} config Animator main configuration object.
+         *                        May be {undefined} or {null}.
+         * @param {Array} target Target array for capabilities config objects that provide URLs that should be loaded
+         *                       before initializing the configuration. May not be {undefined} or {null}.
+         */
+        getCapabilitiesConfigs : getCapabilitiesConfigs
+
+    };
+
+})();
+
+/**
+ * This software may be freely distributed and used under the following MIT license:
+ *
+ * Copyright (c) 2013 Finnish Meteorological Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ * software and associated documentation files (the "Software"), to deal in the
+ * Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+// Strict mode for whole file.
+// "use strict";
+
+// Requires lo-dash
+if ("undefined" === typeof _ || !_) {
+    throw "ERROR: Lo-Dash is required for fi.fmi.metoclient.ui.animator.WfsCapabilities!";
+}
+
+// "Package" definitions
+var fi = fi || {};
+fi.fmi = fi.fmi || {};
+fi.fmi.metoclient = fi.fmi.metoclient || {};
+fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
+fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
+
+/**
+ * WfsCapabilities object provides functions to asynchronously request
+ * capabilities XML data from the server as WFS queries and to get the
+ * requested data in a parsed structure for WMS capability object.
+ *
+ * Notice, this class creates WMS capabilities object from the WFS data.
+ * WFS data may be gotten faster from the server than WMS capabilites data
+ * and therefore this class is provided. Notice, this is a dummy version
+ * and the structure of the capability object is greatly simplified from
+ * the one provided by {fi.fmi.metoclient.ui.animator.WmsCapabilities} class.
+ *
+ * Notice, multiple WFS queries may be required for multiple layers. If one or
+ * more of the layers use WMS capabilities it may be a better idea use only one WMS
+ * URL for all of them and then query all information in single WMS capabilities query.
+ *
+ * WfsCapabilities itself is stateless. It only provides API functions
+ * to start asynchronous flows that can be followed by callback functions.
+ *
+ * See API description in the end of the function.
+ */
+fi.fmi.metoclient.ui.animator.WfsCapabilities = (function() {
+
+    // Delta time in ms to past when starttime is calcuated for WFS query.
+    var DELTA_TIME_PAST = 30 * 24 * 60 * 60 * 1000;
+    // Delta time in ms to future when endtime is calcuated for WFS query.
+    var DELTA_TIME_FUTURE = 30 * 24 * 60 * 60 * 1000;
+
+    // Ajax request constants and response XML constants.
+    var HTTP_METHOD = "GET";
+    var REQUEST_DATA_TYPE = "XML";
+    var XML_GML_TIME_POSITION = "gml\\:timePosition, timePosition";
+
+    // Error object keys.
+    var KEY_ERROR_CODE = "errorCode";
+    var KEY_ERROR_TEXT = "errorText";
+
+    /**
+     * Asynchronously handles the callback and possible error situations there.
+     *
+     * @param {function(data, errors)} callback Callback function that is called.
+     *                                          Operation is ignored if {undefined} or {null}.
+     * @param {Object} data Data that is provided for callback.
+     *                      May be {undefined}, for example, if an error occurred.
+     * @param [] errors Array that contains possible errors that occurred during the asynchronous flow.
+     */
+    function handleCallback(callback, data, errors) {
+        if (callback) {
+            setTimeout(function() {
+                callback(data, errors);
+            }, 0);
+        }
+    }
+
+    /**
+     * Find animation object from the given args object.
+     *
+     * @param {Object} args Object should be args-object of a layer
+     *                      from the main configuration object.
+     *                      May be {undefined} or {null}.
+     */
+    function findAnimation(args) {
+        var animation;
+        _.forEach(args, function(arg) {
+            if (arg && arg.animation) {
+                animation = arg.animation;
+                // No need to search further.
+                // Exit forEach loop.
+                return false;
+            }
+        });
+        return animation;
+    }
+
+    /**
+     * See API for function description.
+     */
+    function isService(capabilitiesConfig) {
+        // Use wfs for capabilities information if stored query id is given.
+        return capabilitiesConfig && capabilitiesConfig.storedQueryId;
+    }
+
+    /**
+     * See API for function description.
+     */
+    function getUniqueConfigs(capabilitiesConfigs, target) {
+        _.forEach(capabilitiesConfigs, function(config) {
+            // Skip items whose URLs are not for WFS service.
+            if (isService(config)) {
+                _.forEach(capabilitiesConfigs, function(config2) {
+                    if (config === config2) {
+                        // Item itself is the first of the kind. Add to uniques target array.
+                        target.push(config);
+                        // Stop looping for this item.
+                        return false;
+
+                    } else if (config.url === config2.url && config.storedQueryId === config2.storedQueryId) {
+                        // Duplicate exists in the array before.
+                        // Do not add to uniques because corresponding item has already been added before.
+                        // Stop searching for this item.
+                        return false;
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * See API for function description.
+     */
+    function getData(options) {
+        if (options.capabilities && options.capabilities.url && options.capabilities.layer && options.capabilities.storedQueryId) {
+            var errors = [];
+            var now = (new Date()).getTime();
+
+            // Capabilities object whose structure is reduced version of the one given by
+            // {OpenLayers.Format.WMSCapabilities.read} function for the WMS capability object
+            // structure.
+            var capabilities = {
+                capability : {
+                    layers : [],
+                    request : {
+                        getcapabilities : {
+                            href : jQuery.trim(options.capabilities.url)
+                        }
+                    }
+                }
+            };
+
+            var params = {
+                request : "GetPropertyValue",
+                valuereference : "wfs:FeatureCollection/wfs:member/omso:GridSeriesObservation/om:phenomenonTime/gml:TimeInstant/gml:timePosition",
+                storedquery_id : options.capabilities.storedQueryId,
+                // Set starttime and endtime parameters because WFS query requires these unless default should be used
+                // which would not give all the times available. Therefore, use deltas that defined large period which should
+                // contain all the times available from the server.
+                // Notice, server does not understand milliseconds. Therefore, they are removed from time strings.
+                starttime : (new Date(now - DELTA_TIME_PAST)).toISOString().replace(/\.\d\d\dZ$/, "Z"),
+                endtime : (new Date(now + DELTA_TIME_FUTURE)).toISOString().replace(/\.\d\d\dZ$/, "Z")
+            };
+            // Merge params into the default object.
+            // Notice, options.params will replace default values if they overlap.
+            _.merge(params, options.params);
+
+            // Get XML data from the server.
+            // Make sure that this function is asynchronous in all cases,
+            // also in possible error cases that could otherwise use callback synchronously.
+            setTimeout(function() {
+                // URL may be logged here for debugging purposes.
+                // Then, you may also use the URL directly with a web browser to check the XML.
+                // if ("undefined" !== typeof console && console) { console.debug("URL: " + options.capabilities.url); }
+                jQuery.ajax({
+                    type : HTTP_METHOD,
+                    url : jQuery.trim(options.capabilities.url),
+                    dataType : REQUEST_DATA_TYPE,
+                    data : params,
+                    success : function(data) {
+                        // Request was success.
+                        // Notice, if server gives an exception information
+                        // in XML format for some error case, the flow should
+                        // come here. But, if testing is done for this javascript
+                        // in different domain or sub-domain than URL used for ajax,
+                        // the callback may call error-function instead. Then,
+                        // the XML body may not be available for parsing.
+                        jQuery(data).find(XML_GML_TIME_POSITION).each(function() {
+                            var layer = {
+                                name : options.capabilities.layer,
+                                dimensions : {
+                                    time : {
+                                        values : [(new Date(jQuery.trim(jQuery(this).text()))).getTime()]
+                                    }
+                                }
+                            };
+                            capabilities.capability.layers.push(layer);
+                        });
+                        handleCallback(options.callback, capabilities, errors);
+                    },
+                    error : function(jqXHR, textStatus, errorThrown) {
+                        // An error occurred.
+                        var error = {};
+                        error[KEY_ERROR_CODE] = jqXHR.status;
+                        // Use errorThrown if it is available and not empty string.
+                        // Otherwise, use textStatus for error value. Notice, empty
+                        // string is also interpreted as false with logical or operator.
+                        error[KEY_ERROR_TEXT] = errorThrown || textStatus;
+                        errors.push(error);
+                        if ("undefined" !== typeof console && console) {
+                            var errorStr = "ERROR: WFS XML response error: ";
+                            errorStr += "Status: " + error[KEY_ERROR_CODE];
+                            errorStr += ", Text: " + error[KEY_ERROR_TEXT];
+                            console.error(errorStr);
+                        }
+                        handleCallback(options.callback, undefined, errors);
+                    }
+                });
+            }, 0);
+
+        } else {
+            // Throw an exception because of the synchronous error.
+            // Then, this exception will be catched and handled properly by
+            // the get data flow structure.
+            throw "ERROR: WFS capabilities configuration is missing URL, layer or storedQueryId information!";
+        }
+    }
+
+    /**
+     * See API for function description.
+     */
+    function getCapabilitiesConfigs(config, target) {
+        _.forEach(config.layers, function(layer) {
+            if (isService(layer.capabilities)) {
+                // Capabilities has been defined for the main-level layer.
+                target.push(layer.capabilities);
+                // WFS needs to have own capabilities also for sublayers
+                // because capabilities are layer and not only URL specific for WFS.
+                var animation = findAnimation(layer.args);
+                if (animation) {
+                    _.forEach(animation.layers, function(animationLayer) {
+                        target.push({
+                            url : layer.capabilities.url,
+                            layer : animationLayer.layer,
+                            storedQueryId : animationLayer.storedQueryId
+                        });
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * ============================
+     * Public API is returned here.
+     * ============================
+     */
+    return {
+
+        /**
+         * Check if the given {capabilitiesConfig} describes WFS service.
+         *
+         * @param {Object} capabilitiesConfig Capabilities config object
+         *                                    from animator main configuration object.
+         *                                    May be {undefined} or {null}.
+         */
+        isService : isService,
+
+        /**
+         * Get unique capabilities config objects.
+         *
+         * Only one of the possible duplicates is inclued into {target}.
+         *
+         * @param {Object} capabilitiesConfigs Array for capabilities config objects
+         *                                     from animator main configuration object.
+         *                                     May not be {undefined} or {null}.
+         * @param {Array} target Unique config objects are included into {target} array.
+         */
+        getUniqueConfigs : getUniqueConfigs,
+
+        /**
+         * Request capability data from the server.
+         *
+         * Operation is asynchronous.
+         *
+         * Notice, callback is {function(data, errors)}.
+         *      - data: Data object provides capabilities data.
+         *              May be {undefined} if an error has occurred.
+         *              See {OpenLayers.Format.WMSCapabilities.read} function for the object structure.
+         *              But notice, this class provides a greatly simplified version and not all the
+         *              properties are available.
+         *      - errors: Array that contains possible errors that occurred during the flow. Array is
+         *                always provided even if it may be empty. If an error occurs, an error string
+         *                is pushed here. Also, when an HTTP error occurs, error contains the textual
+         *                portion of the HTTP status, such as "Not Found" or "Internal Server Error."
+         *                Errors parameter is of this structure:
+         *          [
+         *              {
+         *                  // None, one, or more of the following error values may exist.
+         *                  // Values may also be {undefined} or {null}.
+         *                  errorCode : "errorCodeString",
+         *                  errorText : "errorTextString",
+         *                  extension : {Object}
+         *              },
+         *              ...
+         *          ]
+         *
+         * Notice, object properties of the function {options} parameter are URL encoded by this library
+         * before they are inserted into the request URL.
+         *
+         * @param {Object} options Mandatory. May not be {undefined} or {null}. Object structure:
+         *     {
+         *         config : {Object}
+         *                   Mandatory property. May not be {undefined}, {null} or empty.
+         *                   Configuration content is used for the capability requests.
+         *         params : {Object}
+         *                  Params properties may be provided to replace default parameters used for the
+         *                  capability request. Optional and may be {undefined} or {null} if default may
+         *                  be used. But, should not be empty if the object is given.
+         *         callback : {function(capabilities, errors)}
+         *                    Mandatory property. May not be {undefined} or {null}.
+         *                    Callback is called with the parsed capabilities data
+         *                    and errors array when operation finishes.
+         *                    If an error occurs, data is set {undefined} for the callback.
+         *                    Possible errors are given inside the array that is always provided.
+         *     }
+         * @throws {String} Exception string is thrown if {options} does not contain proper information.
+         */
+        getData : getData,
+
+        /**
+         * Capabilities config objects provide information that is used to load capabilities content.
+         *
+         * This function makes WFS service specific checks when creating capabilities config objects.
+         *
+         * @param {Object} config Animator main configuration object.
+         *                        May be {undefined} or {null}.
+         * @param {Array} target Target array for capabilities config objects that provide URLs that should be loaded
+         *                       before initializing the configuration. May not be {undefined} or {null}.
+         */
+        getCapabilitiesConfigs : getCapabilitiesConfigs
+
+    };
+
+})();
+
+/**
+ * This software may be freely distributed and used under the following MIT license:
+ *
+ * Copyright (c) 2013 Finnish Meteorological Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ * software and associated documentation files (the "Software"), to deal in the
+ * Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+// Strict mode for whole file.
+// "use strict";
+
+// Requires lo-dash
+if ("undefined" === typeof _ || !_) {
+    throw "ERROR: Lo-Dash is required for fi.fmi.metoclient.ui.animator.Capabilities!";
+}
+
+// Requires OpenLayers
+if ("undefined" === typeof OpenLayers || !OpenLayers) {
+    throw "ERROR: OpenLayers is required for fi.fmi.metoclient.ui.animator.Capabilities!";
+}
+
+// "Package" definitions
+var fi = fi || {};
+fi.fmi = fi.fmi || {};
+fi.fmi.metoclient = fi.fmi.metoclient || {};
+fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
+fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
+
+/**
+ * Capabilities object acts as an interface that provides functions
+ * to asynchronously request WMS capabilities XML data from the server
+ * and to get the requested data in a parsed structure.
+ *
+ * Capabilities itself is stateless. It only provides API functions
+ * to start asynchronous flows that can be followed by callback functions.
+ *
+ * Example:
+ * fi.fmi.metoclient.ui.animator.Capabilities.getData(
+ *     {
+ *         conifg : animatorConfig,
+ *         callback: function(data, errors) {
+ *             var layer = fi.fmi.metoclient.ui.animator.Capabilities.getLayer(data, "Weather:temperature");
+ *             var begin = fi.fmi.metoclient.ui.animator.Capabilities.getBeginTime(layer);
+ *             var end = fi.fmi.metoclient.ui.animator.Capabilities.getEndTime(layer);
+ *             var allLayerTimes = fi.fmi.metoclient.ui.animator.Capabilities.getLayerTimes(layer);
+ *         }
+ *     });
+ *
+ * See API description in the end of the function.
+ */
+fi.fmi.metoclient.ui.animator.Capabilities = (function() {
+
+    // Error object keys.
+    var KEY_ERROR_TEXT = "errorText";
+
+    /**
+     * Select service based on the options object properties.
+     *
+     * @param {Object} options Object provides properties that define capabilities
+     *                         information that is used to select proper service.
+     *                         Capabilities info is checked from {options.capabilities} object
+     *                         whose structure is same as used in the animator initialization
+     *                         config object for layers.
+     *                         Defaults to {fi.fmi.metoclient.ui.animator.WmsCapabilities}.
+     */
+    function selectService(options) {
+        return fi.fmi.metoclient.ui.animator.WfsCapabilities.isService(options.capabilities) ? fi.fmi.metoclient.ui.animator.WfsCapabilities : fi.fmi.metoclient.ui.animator.WmsCapabilities;
+    }
+
+    /**
+     * Capabilities config objects provide information that is used to load capabilities content.
+     *
+     * This function makes service specific checks when creating capabilities config objects.
+     *
+     * @param {Object} config Animator main configuration object.
+     *                        May be {undefined} or {null}.
+     * @param {Array} target Target array for capabilities config objects from animator main configuration object.
+     *                       May not be {undefined} or {null}.
+     */
+    function getCapabilitiesConfigs(config, target) {
+        // Get unique WFS capabilities from config.
+        fi.fmi.metoclient.ui.animator.WfsCapabilities.getCapabilitiesConfigs(config, target);
+        // Get unique WMS capabilities from config.
+        fi.fmi.metoclient.ui.animator.WmsCapabilities.getCapabilitiesConfigs(config, target);
+    }
+
+    /**
+     * This function provides unique capabilities config objects.
+     *
+     * Possible duplicate objects are not included into the array. Service specific checking for duplicates.
+     *
+     * @param {Object} Main config objects for animator. This is used to find capabilities config objects.
+     *                 May not be {undefined} or {null}.
+     * @return {Array} Array of capabilities objects that should be loaded before initializing the configuration
+     *                 Array is always provided even if it may be empty.
+     */
+    function getUniqueCapabilities(config) {
+        var uniques = [];
+        var capabilitiesConfigs = [];
+        getCapabilitiesConfigs(config, capabilitiesConfigs);
+        // Get unique WFS capabilities from configs
+        fi.fmi.metoclient.ui.animator.WfsCapabilities.getUniqueConfigs(capabilitiesConfigs, uniques);
+        // Get unique WMS capabilities from configs
+        fi.fmi.metoclient.ui.animator.WmsCapabilities.getUniqueConfigs(capabilitiesConfigs, uniques);
+        return uniques;
+    }
+
+    /**
+     * Asynchronously handles the callback and possible error situations there.
+     *
+     * @param {function(data, errors)} callback Callback function that is called.
+     *                                          Operation is ignored if {undefined} or {null}.
+     * @param {Object} data Data that is provided for callback.
+     *                      May be {undefined}, for example, if an error occurred.
+     * @param [] errors Array that contains possible errors that occurred during the asynchronous flow.
+     */
+    function handleCallback(callback, data, errors) {
+        if (callback) {
+            setTimeout(function() {
+                callback(data, errors);
+            }, 0);
         }
     }
 
@@ -247,38 +1169,70 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
     /**
      * See API for function description.
      */
-    function getRequestUrl(capabilities) {
-        var url;
-        if (capabilities && capabilities.capability && capabilities.capability.request && capabilities.capability.request.getcapabilities && capabilities.capability.request.getcapabilities.href) {
-            url = capabilities.capability.request.getcapabilities.href;
-        }
-        return url;
-    }
-
-    /**
-     * See API for function description.
-     */
     function getData(options) {
-        if (options && options.callback) {
-            try {
-                getParsedData(options);
+        if (options && options.callback && options.config) {
+            var onComplete = _.once(handleCallback);
+            var results = {
+                nComplete : 0,
+                capabilities : [],
+                errors : []
+            };
 
-            } catch(e) {
-                // An error occurred in synchronous flow.
-                // But, inform observer about the error asynchronously.
-                // Then, flow progresses similarly through API in both
-                // error and success cases.
-                var error = {};
-                error[KEY_ERROR_TEXT] = e.toString();
-                if ("undefined" !== typeof console && console) {
-                    console.error("ERROR: Get data error: " + error[KEY_ERROR_TEXT]);
-                }
-                handleCallback(options.callback, undefined, [error]);
+            var uniqueCapabilities = getUniqueCapabilities(options.config);
+            var nRequests = uniqueCapabilities.length;
+            if (nRequests > 0) {
+                _.each(uniqueCapabilities, function(serviceCapability) {
+                    var itemOptions = {
+                        capabilities : serviceCapability,
+                        callback : function(capabilities, errors) {
+                            try {
+                                // One request in a flow has completed.
+                                ++results.nComplete;
+
+                                if (capabilities) {
+                                    results.capabilities.push({
+                                        url : serviceCapability.url,
+                                        capabilities : capabilities
+                                    });
+                                }
+                                results.errors.push.apply(results.errors, errors);
+
+                                if (results.nComplete === nRequests) {
+                                    // All the requests in the flow have finished.
+                                    onComplete(options.callback, results.capabilities, results.errors);
+                                }
+
+                            } catch(e) {
+                                // An error occurred in one request of an asynchronous flow.
+                                var error = {};
+                                error[KEY_ERROR_TEXT] = "ERROR: Error in GetCapabilities flow: " + e.toString();
+                                if ("undefined" !== typeof console && console) {
+                                    console.error(error[KEY_ERROR_TEXT]);
+                                }
+                                results.errors.push(error);
+                                // Flow is completed only after all the requests have finished.
+                                // So, let the flow continue even if some of the requests fail.
+                                if (results.nComplete === nRequests) {
+                                    // Whole flow has finished. Inform about completion.
+                                    onComplete(options.callback, results.capabilities, results.errors);
+                                }
+                            }
+                        },
+                        params : options.params
+                    };
+
+                    // Start asynchronous operation.
+                    selectService(itemOptions).getData(itemOptions);
+
+                });
+
+            } else {
+                onComplete(options.callback, results.capabilities, results.errors);
             }
 
         } else {
             // Callback is required. There is no reason to request data if it is not used somewhere.
-            var errorStr = "ERROR: Options object and callback function in it are mandatory!";
+            var errorStr = "ERROR: Options object and config object and callback function in it are mandatory!";
             if ("undefined" !== typeof console && console) {
                 console.error(errorStr);
             }
@@ -299,9 +1253,13 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
          * Operation is asynchronous.
          *
          * Notice, callback is {function(data, errors)}.
-         *      - data: Data object provides capabilities data.
-         *              May be {undefined} if an error has occurred.
-         *              See {OpenLayers.Format.WMSCapabilities.read} function for the object structure.
+         *      - data: Array provides capabilities data as objects of form:
+         *                {
+         *                    url: {String},
+         *                    capabilities: See {OpenLayers.Format.WMSCapabilities.read} function
+         *                                  for the capabilities object structure.
+         *                }.
+         *              At least an empty array is always given.
          *      - errors: Array that contains possible errors that occurred during the flow. Array is
          *                always provided even if it may be empty. If an error occurs, an error string
          *                is pushed here. Also, when an HTTP error occurs, error contains the textual
@@ -323,9 +1281,9 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
          *
          * @param {Object} options Mandatory. May not be {undefined} or {null}. Object structure:
          *     {
-         *         url : {String}
-         *               Mandatory property. May not be {undefined}, {null} or empty.
-         *               URL that is used for the capability request.
+         *         config : {Object}
+         *                   Mandatory property. May not be {undefined}, {null} or empty.
+         *                   Configuration content is used for the capability requests.
          *         params : {Object}
          *                  Params properties may be provided to replace default parameters used for the
          *                  capability request. Optional and may be {undefined} or {null} if default may
@@ -339,17 +1297,6 @@ fi.fmi.metoclient.ui.animator.WmsCapabilities = (function() {
          *     }
          */
         getData : getData,
-
-        /**
-         * Get URL that is used for capabilities request.
-         *
-         * Notice, this may differ from the URL that is originally given for {getData}.
-         *
-         * @param {Object} capabilities Capabilities data object that is gotten by using {getData}.
-         *                              Operation is ignored if {undefined}, {null} or empty.
-         * @return {String} URL string that is used for given {capabilities}. May be {undefined}.
-         */
-        getRequestUrl : getRequestUrl,
 
         /**
          * Get layer object that matches the given layer name.
@@ -414,8 +1361,12 @@ fi.fmi.metoclient = fi.fmi.metoclient || {};
 fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
 fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
 
-if ("undefined" === typeof fi.fmi.metoclient.ui.animator.WmsCapabilities || !fi.fmi.metoclient.ui.animator.WmsCapabilities) {
-    throw "ERROR: fi.fmi.metoclient.ui.animator.WmsCapabilities is required for fi.fmi.metoclient.ui.animator.Factory!";
+if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Utils || !fi.fmi.metoclient.ui.animator.Utils) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.Utils is required for fi.fmi.metoclient.ui.animator.Factory!";
+}
+
+if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Capabilities || !fi.fmi.metoclient.ui.animator.Capabilities) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.Capabilities is required for fi.fmi.metoclient.ui.animator.Factory!";
 }
 
 /**
@@ -444,42 +1395,6 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
     // capabilities is used to get the proper begin time
     // for the sub-layer.
     var CAPABILITY_TIME_JOIN = "join";
-
-    /**
-     * @private
-     *
-     * Function to provide {bind} if an older browser does not support it natively.
-     *
-     * This will provide IE8+ support.
-     * See, https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
-     *
-     * This function is called during the construction of this singleton instance to make sure
-     * function is available.
-     */
-    (function() {
-        if (!Function.prototype.bind) {
-            Function.prototype.bind = function(oThis) {
-                if ("function" !== typeof this) {
-                    // closest thing possible to the ECMAScript 5 internal IsCallable function
-                    throw "Function.prototype.bind - what is trying to be bound is not callable";
-                }
-
-                var aArgs = Array.prototype.slice.call(arguments, 1);
-                var fToBind = this;
-                var fNOP = function() {
-                };
-                var fBound = function() {
-                    return fToBind.apply(this instanceof fNOP && oThis ? this : oThis, aArgs.concat(Array.prototype.slice.call(arguments)));
-                };
-
-                fNOP.prototype = this.prototype;
-                var FNOP = fNOP;
-                fBound.prototype = new FNOP();
-
-                return fBound;
-            };
-        }
-    })();
 
     /**
      * @private
@@ -544,8 +1459,6 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
 
         // Error objects of asynchronous operations.
         var _errors = [];
-        // Async counter for on-going asynchronous operations.
-        var _asyncCounter = 0;
 
         // Capabilities data for configurations.
         // Capabilities objects wrap requested capabilities and
@@ -574,61 +1487,6 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         //--------------------------
 
         /**
-         * Creates a constructor wrapper function that may be instantiated with {new}.
-         *
-         * @param {Function} constructor Constructor function.
-         *                               Operation ignored if {undefined} or {null}.
-         * @param {Array} args Arguments array that contains arguments that are given for the constructor.
-         *                     May be {undefined} or {null}.
-         * @return {Function} Wrapper function for constructor with given arguments.
-         *                    This can be used with {new} to instantiate.
-         *                    Notice, returned function needs to be surrounded with parentheses when {new} is used.
-         *                    For example, new (constructorWrapper(constructor, args));
-         */
-        var constructorWrapper = function(constructor, args) {
-            var wrapper;
-            if (constructor) {
-                var params = [constructor];
-                if (args) {
-                    params = params.concat(args);
-                }
-                wrapper = constructor.bind.apply(constructor, params);
-            }
-            return wrapper;
-        };
-
-        /**
-         * Create instance of the class with the given class name and arguments
-         *
-         * @param {String} className Name of the class to be instantiated.
-         *                           Operation ignored if {undefined}, {null} or empty.
-         * @param {Array} args Arguments array that contains arguments that are given for the constructor.
-         *                     May be {undefined} or {null}.
-         * @return {Object} New Instance of the class with given arguments.
-         */
-        var createInstance = function(className, args) {
-            var instance;
-            if (className) {
-                // Check namespaces of the class
-                // and create function that contains possible namespaces.
-                var nameArr = className.split(".");
-                var constructor = (window || this);
-                if (constructor) {
-                    for (var i = 0, len = nameArr.length; i < len; i++) {
-                        constructor = constructor[nameArr[i]];
-                    }
-                    if ("function" === typeof constructor) {
-                        // Function was successfully created.
-                        // Create instance with the given arguments.
-                        // Notice, parentheses are required around wrapper function.
-                        instance = new (constructorWrapper(constructor, args))();
-                    }
-                }
-            }
-            return instance;
-        };
-
-        /**
          * Asynchronously handles the callback and possible error situations there.
          *
          * @param {function(data, errors)} callback Callback function that is called.
@@ -652,53 +1510,6 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         };
 
         /**
-         * @return {Array} Array of capability objects from the configuration object.
-         *                 Array is always given even if it may be empty.
-         */
-        function getConfigCapabilities() {
-            var capabilities = [];
-            if (_config && _config.layers && _config.layers.length) {
-                for (var i = 0; i < _config.layers.length; ++i) {
-                    var layer = _config.layers[i];
-                    if (layer) {
-                        var capability = layer.capabilities;
-                        if (capability) {
-                            capabilities.push(capability);
-                        }
-                    }
-                }
-            }
-            return capabilities;
-        }
-
-        /**
-         * @return {Array} Array of unique capability URL strings from the configuration object.
-         *                 Array is always given even if it may be empty.
-         */
-        function getConfigCapabilitiesUrls() {
-            var urls = [];
-            var capabilities = getConfigCapabilities();
-            for (var i = 0; i < capabilities.length; ++i) {
-                var capability = capabilities[i];
-                if (capability && capability.url) {
-                    // Check if an exactly same URL already exists.
-                    var urlExists = false;
-                    for (var j = 0; j < urls.length; ++j) {
-                        if (capability.url === urls[j]) {
-                            urlExists = true;
-                            break;
-                        }
-                    }
-                    if (!urlExists) {
-                        // Add new URL.
-                        urls.push(capability.url);
-                    }
-                }
-            }
-            return urls;
-        }
-
-        /**
          * @param {String} layer Layer identifier.
          *                       Operation is ignored if {undefined}, {null} or {empty}.
          * @param {String} url URL used for capability request.
@@ -706,7 +1517,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          *                     is identified by the URL.
          *                     Operation is ignored if {undefined}, {null} or {empty}.
          * @return {Object} Layer from the loaded capabilities.
-         *                  See {fi.fmi.metoclient.ui.animator.WmsCapabilities.getLayer}.
+         *                  See {fi.fmi.metoclient.ui.animator.Capabilities.getLayer}.
          *                  May be {undefined} if layer is not found.
          */
         function getCapabilityLayer(layer, url) {
@@ -717,7 +1528,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                     if (capas) {
                         var capabilities = capas.capabilities;
                         if (capabilities && url === capas.url) {
-                            var capaLayer = fi.fmi.metoclient.ui.animator.WmsCapabilities.getLayer(capabilities, layer);
+                            var capaLayer = fi.fmi.metoclient.ui.animator.Capabilities.getLayer(capabilities, layer);
                             // Notice, checking is finished if layer is found.
                             // There should be only one match and other URL matches should not exist
                             // in the capabilities array. But, continue search if layer is not found
@@ -860,13 +1671,13 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         function checkAnimationConfigTimes(timeInfo, capabilityLayer, resolution) {
             if (timeInfo && capabilityLayer) {
                 if (timeInfo.beginTime === CAPABILITY_TIME_AUTO) {
-                    timeInfo.beginTime = fi.fmi.metoclient.ui.animator.WmsCapabilities.getBeginTime(capabilityLayer);
+                    timeInfo.beginTime = fi.fmi.metoclient.ui.animator.Capabilities.getBeginTime(capabilityLayer);
                     // Because begin times are floored on resolution when layers are created,
                     // make sure begin time is within capability limits by ceiling it here.
                     ceilDate(timeInfo.beginTime, resolution);
                 }
                 if (timeInfo.endTime === CAPABILITY_TIME_AUTO) {
-                    timeInfo.endTime = fi.fmi.metoclient.ui.animator.WmsCapabilities.getEndTime(capabilityLayer);
+                    timeInfo.endTime = fi.fmi.metoclient.ui.animator.Capabilities.getEndTime(capabilityLayer);
                     // Because end times are ceiled on resolution when layers are created,
                     // make sure end time is within capability limits by flooring it here.
                     floorDate(timeInfo.endTime, resolution);
@@ -911,7 +1722,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                                     // Parent end time defines end time for the whole animation, including sub layers.
                                     // Join can not be done after whole animation. Instead, end time of the parent
                                     // capability needs to be used to join sub-animation into the middle of the animation.
-                                    subLayer.beginTime = fi.fmi.metoclient.ui.animator.WmsCapabilities.getEndTime(capabilityLayer);
+                                    subLayer.beginTime = fi.fmi.metoclient.ui.animator.Capabilities.getEndTime(capabilityLayer);
                                     if (undefined !== subLayer.beginTime) {
                                         // Notice, configuration animation resolution and capabilities resolution
                                         // may define different values. Animation may use greater resolution.
@@ -988,61 +1799,21 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          *                       May be {undefined} or {null}.
          */
         function capabilitiesCallback(callback, capabilities, errors) {
-            if (_asyncCounter > 0) {
-                // Decrease the counter because an asynchronous operation has finished.
-                --_asyncCounter;
-            }
-
+            // Update error and capabilities content.
             if (capabilities) {
-                _capabilitiesContainer.push(capabilities);
+                _capabilitiesContainer.push.apply(_capabilitiesContainer, capabilities);
             }
             if (errors) {
-                // Update error and capabilities content.
                 _errors.push.apply(_errors, errors);
             }
 
-            // Check if all asynchronous operations have finished.
-            if (0 === _asyncCounter) {
-                // Just to be sure that if for some reason we come here twice,
-                // callback is only called the first time.
-                _asyncCounter = -1;
+            // Check and fine tune configuration before final callback
+            // to inform that capabilites are handled.
+            checkConfiguration();
 
-                // Check and fine tune configuration before final callback
-                // to inform that capabilites are handled.
-                checkConfiguration();
-
-                // All asynchronous operations have finished.
-                // Finish the flow by calling the callback.
-                handleCallback(callback);
-            }
-        }
-
-        /**
-         * Start asynchronous operation to get capabilitis data.
-         *
-         * @param {Function} callback See {initCapabilities} function for callback description.
-         * @param {String} url URL used for capability request.
-         *                     May not be {undefined}, {null} or empty.
-         */
-        function getCapabilitiesData(callback, url) {
-            // Callback for capabilities operations.
-            var optionsCallback = function(capabilities, errors) {
-                // Wrap capabilities related information into object.
-                var capabilitiesWrapper = {
-                    url : url,
-                    capabilities : capabilities
-                };
-                capabilitiesCallback(callback, capabilitiesWrapper, errors);
-            };
-
-            // Options to get capabilities data.
-            var options = {
-                url : url,
-                callback : optionsCallback
-            };
-
-            // Start asynchronous operation.
-            fi.fmi.metoclient.ui.animator.WmsCapabilities.getData(options);
+            // All asynchronous operations have finished.
+            // Finish the flow by calling the callback.
+            handleCallback(callback);
         }
 
         /**
@@ -1053,44 +1824,20 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * @param {Function} callback See {init} function for callback description.
          */
         function initCapabilities(callback) {
-            // Reset previous capabilities state.
-            _capabilitiesContainer = [];
-
-            // Exception handler function that is used inside the loop.
-            var handleExceptionInLoop = function(e) {
-                // An error has occurred in synchronous part before starting asynchronous operation.
-                // Handle the case as if asynchronous operation would have finished. Then, flow
-                // continues if another asynchronous operation is going on or about to be started.
-                // Otherwise, flow ends normally.
-                setTimeout(function() {
-                    capabilitiesCallback(callback, undefined, ["ERROR: Error init capabilities: " + e.toString()]);
-                }, 0);
+            // Callback for capabilities operations.
+            var optionsCallback = function(capabilities, errors) {
+                capabilitiesCallback(callback, capabilities, errors);
             };
 
-            // There may be multiple asynchronous operations started.
-            // Counter is initialized with the total count. Then, catch can
-            // handle synchronous exceptions as if asynchronous operation would
-            // have finished and one fail does not stop the whole flow if other
-            // asynchronous operations are going-on or about to be started.
-            var capabilitiesUrls = getConfigCapabilitiesUrls();
-            _asyncCounter = capabilitiesUrls.length;
-            if (capabilitiesUrls.length) {
-                for (var i = 0; i < capabilitiesUrls.length; ++i) {
-                    try {
-                        getCapabilitiesData(callback, capabilitiesUrls[i]);
+            // Options to get capabilities data.
+            var options = {
+                config : _config,
+                callback : optionsCallback
+            };
 
-                    } catch(e) {
-                        handleExceptionInLoop(e);
-                    }
-                }
-
-            } else {
-                // No capabilities to load.
-                // Finish flow asynchronously.
-                setTimeout(function() {
-                    capabilitiesCallback(callback, undefined, []);
-                }, 0);
-            }
+            // Start asynchronous operation.
+            // Multiple asynchronous operations may be started.
+            fi.fmi.metoclient.ui.animator.Capabilities.getData(options);
         }
 
         /**
@@ -1246,7 +1993,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                         options.theme = null;
                     }
                 }
-                _map = createInstance(_config.map.className, args);
+                _map = fi.fmi.metoclient.ui.animator.Utils.createInstance(_config.map.className, args);
             }
             return _map;
         }
@@ -1309,7 +2056,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                                 }
                             }
                         }
-                        layer = createInstance(config.className, config.args);
+                        layer = fi.fmi.metoclient.ui.animator.Utils.createInstance(config.className, config.args);
                     }
                     if (layer) {
                         _layers.push(layer);
@@ -1468,8 +2215,11 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
             }
             try {
                 // Reset asynchronous operation variables before starting new flow.
-                _asyncCounter = 0;
                 _errors = [];
+
+                // Make sure container is empty when initialization is started.
+                _capabilitiesContainer = [];
+
                 initCapabilities(callback);
 
             } catch(e) {
