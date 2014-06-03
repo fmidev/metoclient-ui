@@ -905,7 +905,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                         setLayers(map, layers);
                     }
                     // Zoom the map after layers have been inserted.
-                    map.setCenter(map.getCenter(), _config.getDefaultZoomLevel());
+                    var mapCenter = map.getCenter();
+                    if (!mapCenter) {
+                        // Map may not have center available even if it has been defined in config.
+                        // Then, calculate center from the maximum extent to make sure map can be shown.
+                        mapCenter = map.getMaxExtent().getCenterLonLat();
+                    }
+                    map.setCenter(mapCenter, _config.getDefaultZoomLevel());
                     setupSwitcher(map, _options.layerSwitcherDivId, _options.maximizeSwitcher);
                 }
             }
