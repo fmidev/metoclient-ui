@@ -59,9 +59,9 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
 fi.fmi.metoclient.ui.animator.WfsCapabilities = (function() {
 
     // Delta time in ms to past when starttime is calcuated for WFS query.
-    var DELTA_TIME_PAST = 30 * 24 * 60 * 60 * 1000;
+    var DELTA_TIME_PAST = 1 * 24 * 60 * 60 * 1000;
     // Delta time in ms to future when endtime is calcuated for WFS query.
-    var DELTA_TIME_FUTURE = 30 * 24 * 60 * 60 * 1000;
+    var DELTA_TIME_FUTURE = 1 * 24 * 60 * 60 * 1000;
 
     // Ajax request constants and response XML constants.
     var HTTP_METHOD = "GET";
