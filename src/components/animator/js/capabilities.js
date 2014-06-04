@@ -65,6 +65,8 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  */
 fi.fmi.metoclient.ui.animator.Capabilities = (function() {
 
+    // Constants.
+    var TIME_RADIX = 10;
     // Error object keys.
     var KEY_ERROR_TEXT = "errorText";
 
@@ -194,7 +196,9 @@ fi.fmi.metoclient.ui.animator.Capabilities = (function() {
                     time = timeSplits[0];
                 }
             }
-            time = new Date(time);
+            // Time is expected to be time format string if it is not a number.
+            // Convert time value into Date object.
+            time = new Date(isNaN(time) ? time : parseInt(time, TIME_RADIX));
         }
         return time;
     }
@@ -219,7 +223,9 @@ fi.fmi.metoclient.ui.animator.Capabilities = (function() {
                     time = timeSplits[1];
                 }
             }
-            time = new Date(time);
+            // Time is expected to be time format string if it is not a number.
+            // Convert time value into Date object.
+            time = new Date(isNaN(time) ? time : parseInt(time, TIME_RADIX));
         }
         return time;
     }

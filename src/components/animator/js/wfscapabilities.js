@@ -199,16 +199,19 @@ fi.fmi.metoclient.ui.animator.WfsCapabilities = (function() {
                         // in different domain or sub-domain than URL used for ajax,
                         // the callback may call error-function instead. Then,
                         // the XML body may not be available for parsing.
-                        jQuery(data).find(XML_GML_TIME_POSITION).each(function() {
-                            var layer = {
-                                name : options.capabilities.layer,
-                                dimensions : {
-                                    time : {
-                                        values : [(new Date(jQuery.trim(jQuery(this).text()))).getTime()]
-                                    }
+                        var layer = {
+                            name : options.capabilities.layer,
+                            dimensions : {
+                                time : {
+                                    values : []
                                 }
-                            };
-                            capabilities.capability.layers.push(layer);
+                            }
+                        };
+                        capabilities.capability.layers.push(layer);
+                        jQuery(data).find(XML_GML_TIME_POSITION).each(function() {
+                            // XML gives times in ascending order.
+                            // Also, capabilities layer object should give times in ascending order.
+                            layer.dimensions.time.values.push((new Date(jQuery.trim(jQuery(this).text()))).getTime());
                         });
                         handleCallback(options.callback, capabilities, errors);
                     },
