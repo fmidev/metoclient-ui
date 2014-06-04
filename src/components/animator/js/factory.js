@@ -741,6 +741,20 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         /**
          * See API for function description.
          */
+        function showAnimationInitProgress() {
+            return _config && _config.showAnimationInitProgress ? true : false;
+        }
+
+        /**
+         * See API for function description.
+         */
+        function showAnimationLoadProgress() {
+            return _config && _config.showAnimationLoadProgress ? true : false;
+        }
+
+        /**
+         * See API for function description.
+         */
         function getAnimationResolution() {
             // Set resolution once.
             if (_resolution === undefined) {
@@ -949,6 +963,16 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * @return {Integer} Refresh interval in milliseconds that is used for the animation.
          */
         this.getAnimationRefreshInterval = getAnimationRefreshInterval;
+
+        /**
+         * @return {Boolean} Load progress element is shown if {true}. Else {false}.
+         */
+        this.showAnimationInitProgress = showAnimationInitProgress;
+
+        /**
+         * @return {Boolean} Load progress element is shown if {true}. Else {false}.
+         */
+        this.showAnimationLoadProgress = showAnimationLoadProgress;
 
         /**
          * @return {Integer} Animation resolution time in milliseconds that is used for the animation.

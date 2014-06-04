@@ -478,6 +478,13 @@ fi.fmi.metoclient.ui.animator.Config = {
     // If animation configuration is not set, framework checks layer configurations
     // to check the smallest begin time, greatest end time, and greatest resolution time.
 
+    // Animation shows progress element during asynchronous initialization if set {true}.
+    // Element not shown if {undefined}, {null} or {false}.
+    showAnimationInitProgress : true,
+    // Animation shows progress element during asynchronous content loading if set {true}.
+    // Element not shown if {undefined}, {null} or {false}.
+    showAnimationLoadProgress : true,
+
     // Animation refresh interval in ms defines how often animation content
     // should be refreshed by reloading content. Animation is not refreshed
     // if {undefined}, {null} or less or equal to zero.

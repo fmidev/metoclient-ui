@@ -300,7 +300,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          */
         function progressbarLoadStarted(layer) {
             if (layer && -1 === jQuery.inArray(layer, _loadingLayers)) {
-                if (!_loadingLayers.length) {
+                if (!_loadingLayers.length && _config.showAnimationLoadProgress()) {
                     // First layer to start loading.
                     // So, start showing progressbar.
                     jQuery(".animatorLoadProgressbar").show();
@@ -1123,8 +1123,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 }
                 // Progress bar is included into structure here.
                 // Then, it is available during asynchronous initializations.
-                if (options.animationDivId) {
-                    // Add progressbar element.
+                if (options.animationDivId && (_config.showAnimationInitProgress() || _config.showAnimationLoadProgress())) {
+                    // Add progressbar element if configuration defines it should be shown.
                     var loadProgressbar = jQuery('<div class="animatorLoadProgressbar"></div>');
                     jQuery("#" + options.animationDivId).append(loadProgressbar);
                     loadProgressbar.progressbar({
@@ -1241,16 +1241,18 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 try {
                     // Set options and create config only once.
                     _options = options;
-                    // Create animation structure for the content.
-                    // Then, progressbar may be shown during asyncronous initializations.
-                    createStructure(options);
                     // Configuration object is deep cloned here.
                     // Then, if properties are changed during the flow, the content of the original object is not changed.
                     _config = new fi.fmi.metoclient.ui.animator.Factory(_.cloneDeep(options.config || fi.fmi.metoclient.ui.animator.Config, cloneDeepCallback));
+                    // Create animation structure for the content.
+                    // Then, progressbar may be shown during asyncronous initializations.
+                    createStructure(options);
                     setRefreshInterval();
                     // Start asynchronous initialization.
-                    // Also, show progressbar during asynchronous operation.
-                    jQuery(".animatorLoadProgressbar").show();
+                    if (_config.showAnimationInitProgress()) {
+                        // Also, show progressbar during asynchronous operation.
+                        jQuery(".animatorLoadProgressbar").show();
+                    }
                     _config.init(function(factory, errors) {
                         // Asynchronous initialization is over.
                         // Hide the progressbar.
