@@ -1136,6 +1136,30 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             }
         }
 
+        /**
+         * Start animation content refresh interval if defined in configuration.
+         */
+        function setRefreshInterval() {
+            var interval = _config.getAnimationRefreshInterval();
+            if (interval && interval > 0) {
+                // Proper interval value is provided in configuration.
+                var refreshTimeout = setTimeout(function() {
+                    // Temporarily hold original options here because
+                    // reset will clear the memeber variables.
+                    var options = _options;
+                    // Reset whole animator.
+                    _me.reset();
+                    // Initialize animation again with original options.
+                    // This will load new animator content.
+                    _me.init(options);
+                }, interval);
+                // Include timeout value into clear array to be sure that
+                // timer is cleared if animator is resetted by another parts
+                // of the flow.
+                _resetClearTimeouts.push(refreshTimeout);
+            }
+        }
+
         // Public functions for API.
         //--------------------------
 
@@ -1223,6 +1247,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     // Configuration object is deep cloned here.
                     // Then, if properties are changed during the flow, the content of the original object is not changed.
                     _config = new fi.fmi.metoclient.ui.animator.Factory(_.cloneDeep(options.config || fi.fmi.metoclient.ui.animator.Config, cloneDeepCallback));
+                    setRefreshInterval();
                     // Start asynchronous initialization.
                     // Also, show progressbar during asynchronous operation.
                     jQuery(".animatorLoadProgressbar").show();

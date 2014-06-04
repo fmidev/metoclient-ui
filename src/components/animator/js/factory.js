@@ -734,6 +734,13 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         /**
          * See API for function description.
          */
+        function getAnimationRefreshInterval() {
+            return _config ? _config.animationRefreshInterval : undefined;
+        }
+
+        /**
+         * See API for function description.
+         */
         function getAnimationResolution() {
             // Set resolution once.
             if (_resolution === undefined) {
@@ -937,6 +944,11 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * @return {Integer} Frame rate in milliseconds that is used for the animation.
          */
         this.getAnimationFrameRate = getAnimationFrameRate;
+
+        /**
+         * @return {Integer} Refresh interval in milliseconds that is used for the animation.
+         */
+        this.getAnimationRefreshInterval = getAnimationRefreshInterval;
 
         /**
          * @return {Integer} Animation resolution time in milliseconds that is used for the animation.
