@@ -59,6 +59,15 @@ if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Controller || !fi.fmi.m
  */
 fi.fmi.metoclient.ui.animator.Animator = (function() {
 
+    // Constant variables.
+
+    // Time for debounce function.
+    var DEBOUNCE_TIME = 10;
+    // Maximum time for debounce function.
+    var DEBOUNCE_MAX_TIME = 100;
+
+    // Instance independent functions.
+
     /**
      * Controller object.
      *
@@ -241,6 +250,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         /**
          * Callback for configuration {init} function call.
          *
+         * This function is also asynchronous.
+         *
          * See more details from {init} function for {options} and {errors} parameters.
          *
          * @param {Object} options Options for animator initialization.
@@ -264,8 +275,18 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 createController();
             }
 
-            // Handle callback after asynchronous initialization.
-            handleCallback(options.callback, errors);
+            setTimeout(function() {
+                // Refresh is required to make sure controller uses proper width in all cases.
+                // Otherwise, controller width may not take its full space.
+                // Therefore, refresh UI after debounce time that limits how often controller
+                // can be updated.
+                refresh();
+                // Controller is made hidden as default. Then, resize will not be as visible.
+                // So, show controller after refresh.
+                jQuery("#" + _options.controllerDivId).show();
+                // Handle callback after asynchronous initialization.
+                handleCallback(options.callback, errors);
+            }, DEBOUNCE_TIME);
         }
 
         // Utils functions.
@@ -282,8 +303,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         function createDebounce(f) {
             var debounce;
             if (_.isFunction(f)) {
-                debounce = _.debounce(f, 10, {
-                    maxWait : 100
+                debounce = _.debounce(f, DEBOUNCE_TIME, {
+                    maxWait : DEBOUNCE_MAX_TIME
                 });
             }
             return debounce;
@@ -963,6 +984,10 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 var ctrlSelector = "#" + _options.controllerDivId;
                 var ctrls = jQuery(ctrlSelector);
                 if (ctrls.length) {
+                    // Hide controls as default.
+                    // The control width may need to be refreshed during initialization.
+                    // Therefore, show it only in the end of initialization.
+                    ctrls.hide();
                     var currentTime = (new Date()).getTime();
                     var startTime = getBeginDate().getTime();
                     var endTime = getEndDate().getTime();
