@@ -250,7 +250,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         /**
          * Callback for configuration {init} function call.
          *
-         * This function is also asynchronous.
+         * Uses asynchronous function before handling callback.
          *
          * See more details from {init} function for {options} and {errors} parameters.
          *
@@ -266,27 +266,29 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 if ("undefined" !== typeof console && console) {
                     console.error("ERROR: Animator config init errors. Animation is not created!");
                 }
-
-            } else {
-                // Use options and configuration object to set map and layers.
-                setMapAndLayers();
-
-                // Create slider. Notice, this will set itself according to the options.
-                createController();
-            }
-
-            setTimeout(function() {
-                // Refresh is required to make sure controller uses proper width in all cases.
-                // Otherwise, controller width may not take its full space.
-                // Therefore, refresh UI after debounce time that limits how often controller
-                // can be updated.
-                refresh();
-                // Controller is made hidden as default. Then, resize will not be as visible.
-                // So, show controller after refresh.
-                jQuery("#" + _options.controllerDivId).show();
                 // Handle callback after asynchronous initialization.
                 handleCallback(options.callback, errors);
-            }, DEBOUNCE_TIME);
+
+            } else {
+                try {
+                    // Use options and configuration object to set map and layers.
+                    setMapAndLayers();
+
+                    // Create slider. Notice, this will set itself according to the options.
+                    createController(errors, function() {
+                        // Handle callback after asynchronous initialization.
+                        handleCallback(options.callback, errors);
+                    });
+
+                } catch(e) {
+                    var errorStr = "ERROR: ConfigInitCallback: " + e.toString();
+                    errors.push(errorStr);
+                    if ("undefined" !== typeof console && console) {
+                        console.error(errorStr);
+                    }
+                    handleCallback(options.callback, errors);
+                }
+            }
         }
 
         // Utils functions.
@@ -972,112 +974,138 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         /**
          * Create time controller and set it into the UI according to the options that have been set during init.
+         *
+         * Asynchronous function calls {cb} when whole creation operation is complete.
+         *
+         * @param {Array} errors Array that contains possible error objects.
+         *                       May not be {undefined} or {null}.
+         * @param {Function} cb Callback function that is called when creation is complete.
+         *                      May not be {undefined} or {null}.
          */
-        function createController() {
-            if (!_options || !_options.controllerDivId || !_options.playAndPauseDivId) {
-                throw "ERROR: Options or properties missing for controller!";
-            }
+        function createController(errors, cb) {
+            // Because parts of the function need to be asynchronous,
+            // make the whole function to be asynchronous.
+            // Then, error and success cases can be handled consistently.
+            setTimeout(function() {
+                try {
+                    if (!_options || !_options.controllerDivId || !_options.playAndPauseDivId) {
+                        errors.push("ERROR: Options or properties missing for controller!");
 
-            // Do not create controller if animation has not defined any time period for frames.
-            // If no period is given, then only show currently given layers.
-            if (getBeginDate() !== undefined && getEndDate() !== undefined) {
-                var ctrlSelector = "#" + _options.controllerDivId;
-                var ctrls = jQuery(ctrlSelector);
-                if (ctrls.length) {
-                    // Hide controls as default.
-                    // The control width may need to be refreshed during initialization.
-                    // Therefore, show it only in the end of initialization.
-                    ctrls.hide();
-                    var currentTime = (new Date()).getTime();
-                    var startTime = getBeginDate().getTime();
-                    var endTime = getEndDate().getTime();
-                    // Forecast start time.
-                    var fctStart = getForecastBeginDate().getTime();
-                    // If end time is less than forecast time, then forecast is not used and value is left undefined.
-                    if (endTime < fctStart) {
-                        fctStart = undefined;
-                    }
-                    var timePeriodListeners = [];
-                    var timeSelectionListeners = [];
-                    var fctStartTimeListeners = [];
-                    var tickIntervalListeners = [];
+                    } else {
+                        // Do not create controller if animation has not defined any time period for frames.
+                        // If no period is given, then only show currently given layers.
+                        if (getBeginDate() !== undefined && getEndDate() !== undefined) {
+                            var ctrlSelector = "#" + _options.controllerDivId;
+                            var ctrls = jQuery(ctrlSelector);
+                            if (ctrls.length) {
+                                var currentTime = (new Date()).getTime();
+                                var startTime = getBeginDate().getTime();
+                                var endTime = getEndDate().getTime();
+                                // Forecast start time.
+                                var fctStart = getForecastBeginDate().getTime();
+                                // If end time is less than forecast time, then forecast is not used and value is left undefined.
+                                if (endTime < fctStart) {
+                                    fctStart = undefined;
+                                }
+                                var timePeriodListeners = [];
+                                var timeSelectionListeners = [];
+                                var fctStartTimeListeners = [];
+                                var tickIntervalListeners = [];
 
-                    // Model is used by animation controller to setup slider according to the animation settings.
-                    var timeModel = {
-                        getStartTime : function() {
-                            return startTime;
-                        },
-                        getEndTime : function() {
-                            return endTime;
-                        },
-                        getResolution : function() {
-                            return getResolution();
-                        },
-                        getForecastStartTime : function() {
-                            return fctStart;
-                        },
-                        addTimePeriodChangeListener : function(l) {
-                            timePeriodListeners.push(l);
-                        },
-                        addTimeSelectionChangeListener : function(l) {
-                            timeSelectionListeners.push(l);
-                        },
-                        addAnimationEventsListener : function(l) {
-                            _animationEventsListeners.push(l);
-                        },
-                        addForecastStartTimeChangeListener : function(l) {
-                            fctStartTimeListeners.push(l);
-                        },
-                        addTickIntervalChangeListener : function(l) {
-                            tickIntervalListeners.push(l);
-                        }
-                    };
+                                // Model is used by animation controller to setup slider according to the animation settings.
+                                var timeModel = {
+                                    getStartTime : function() {
+                                        return startTime;
+                                    },
+                                    getEndTime : function() {
+                                        return endTime;
+                                    },
+                                    getResolution : function() {
+                                        return getResolution();
+                                    },
+                                    getForecastStartTime : function() {
+                                        return fctStart;
+                                    },
+                                    addTimePeriodChangeListener : function(l) {
+                                        timePeriodListeners.push(l);
+                                    },
+                                    addTimeSelectionChangeListener : function(l) {
+                                        timeSelectionListeners.push(l);
+                                    },
+                                    addAnimationEventsListener : function(l) {
+                                        _animationEventsListeners.push(l);
+                                    },
+                                    addForecastStartTimeChangeListener : function(l) {
+                                        fctStartTimeListeners.push(l);
+                                    },
+                                    addTickIntervalChangeListener : function(l) {
+                                        tickIntervalListeners.push(l);
+                                    }
+                                };
 
-                    // Animation controller may use these callback functions to inform
-                    // if animation state should be changed because of the actions in the slider.
-                    var timeController = {
-                        proposeTimePeriodChange : function(startTime, endTime) {
+                                // Animation controller may use these callback functions to inform
+                                // if animation state should be changed because of the actions in the slider.
+                                var timeController = {
+                                    proposeTimePeriodChange : function(startTime, endTime) {
 
-                        },
-                        proposeTimeSelectionChange : function(time) {
-                            if ((time >= startTime) && (time <= endTime)) {
-                                // Make sure steps are in given resolutions.
-                                time = time - time % getResolution();
-                                fireSelectedTimeChanged(time, timeSelectionListeners);
+                                    },
+                                    proposeTimeSelectionChange : function(time) {
+                                        if ((time >= startTime) && (time <= endTime)) {
+                                            // Make sure steps are in given resolutions.
+                                            time = time - time % getResolution();
+                                            fireSelectedTimeChanged(time, timeSelectionListeners);
+                                        }
+                                    },
+                                    proposeNextFrame : function() {
+                                        fireNextFrame();
+                                    },
+                                    proposePreviousFrame : function() {
+                                        firePreviousFrame();
+                                    },
+                                    proposePause : function() {
+                                        firePause();
+                                    }
+                                };
+
+                                setPlayAndPause();
+
+                                // Controller needs to be created asynchronously.
+                                // Otherwise, its width may not be properly set.
+                                setTimeout(function() {
+                                    _animationController = createCtrl(ctrls, timeModel, timeController);
+
+                                    // Bind to listen for width changes in element to update
+                                    // controller if necessary. Width is defined as relative
+                                    // in CSS but height is static.
+                                    var width = ctrls.width();
+                                    // Notice, the window resize listener has already been set during animator construction.
+                                    // Use debounce to limit frequency of component redraw operations.
+                                    _animationControllerResize = createDebounce(function() {
+                                        var currentWidth = jQuery(ctrlSelector).width();
+                                        if (currentWidth !== width) {
+                                            width = currentWidth;
+                                            // Simply replace old with a new controller.
+                                            _animationController.remove();
+                                            _animationController = createCtrl(ctrls, timeModel, timeController);
+                                        }
+                                    });
+                                }, 0);
                             }
-                        },
-                        proposeNextFrame : function() {
-                            fireNextFrame();
-                        },
-                        proposePreviousFrame : function() {
-                            firePreviousFrame();
-                        },
-                        proposePause : function() {
-                            firePause();
                         }
-                    };
+                    }
 
-                    _animationController = createCtrl(ctrls, timeModel, timeController);
+                } catch(e) {
+                    var errorStr = "ERROR: ConfigInitCallback: " + e.toString();
+                    errors.push(errorStr);
+                    if ("undefined" !== typeof console && console) {
+                        console.error(errorStr);
+                    }
 
-                    // Bind to listen for width changes in element to update
-                    // controller if necessary. Width is defined as relative
-                    // in CSS but height is static.
-                    var width = ctrls.width();
-                    // Notice, the window resize listener has already been set during animator construction.
-                    // Use debounce to limit frequency of component redraw operations.
-                    _animationControllerResize = createDebounce(function() {
-                        var currentWidth = jQuery(ctrlSelector).width();
-                        if (currentWidth !== width) {
-                            width = currentWidth;
-                            // Simply replace old with a new controller.
-                            _animationController.remove();
-                            _animationController = createCtrl(ctrls, timeModel, timeController);
-                        }
-                    });
-
-                    setPlayAndPause();
+                } finally {
+                    // Inform that operation is complete.
+                    cb();
                 }
-            }
+            }, 0);
         }
 
         /**
