@@ -741,6 +741,13 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         /**
          * See API for function description.
          */
+        function getAnimationAutoStart() {
+            return _config && _config.animationAutoStart ? true : false;
+        }
+
+        /**
+         * See API for function description.
+         */
         function showAnimationInitProgress() {
             return _config && _config.showAnimationInitProgress ? true : false;
         }
@@ -963,6 +970,11 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * @return {Integer} Refresh interval in milliseconds that is used for the animation.
          */
         this.getAnimationRefreshInterval = getAnimationRefreshInterval;
+
+        /**
+         * @return {Boolean} Animation is automatically started when content has been loaded if {true}. Else {false}.
+         */
+        this.getAnimationAutoStart = getAnimationAutoStart;
 
         /**
          * @return {Boolean} Load progress element is shown if {true}. Else {false}.

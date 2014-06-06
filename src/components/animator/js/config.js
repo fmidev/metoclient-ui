@@ -478,6 +478,10 @@ fi.fmi.metoclient.ui.animator.Config = {
     // If animation configuration is not set, framework checks layer configurations
     // to check the smallest begin time, greatest end time, and greatest resolution time.
 
+    // Animation is automatically started when content has been loaded if set {true}.
+    // Animation is not automatically started if {undefined}, {null} or {false}.
+    animationAutoStart : false,
+
     // Animation shows progress element during asynchronous initialization if set {true}.
     // Element not shown if {undefined}, {null} or {false}.
     showAnimationInitProgress : true,

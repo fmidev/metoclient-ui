@@ -187,7 +187,14 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         _events.animationloadcomplete = function(event) {
             progressbarLoadComplete(event.layer);
-            firePlay();
+            if (_config.getAnimationAutoStart()) {
+                // Animation is started when loading has completed.
+                firePlay();
+
+            } else {
+                // Animation is not started, but show the first frame.
+                changeToNextFrame();
+            }
             jQuery.each(_animationEventsListeners, function(index, value) {
                 value.loadCompleteCb(event);
             });
