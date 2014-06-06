@@ -192,8 +192,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 firePlay();
 
             } else {
-                // Animation is not started, but show the first frame.
-                changeToNextFrame();
+                // Animation is not started, but show default frame.
+                showDefaultFrame();
             }
             jQuery.each(_animationEventsListeners, function(index, value) {
                 value.loadCompleteCb(event);
@@ -396,6 +396,21 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             return _config.getForecastBeginDate();
         }
 
+        /**
+         * @return {Date} The last observation date of the whole animation.
+         *                {undefined} if animation does not have observations.
+         */
+        function getLastObservationDate() {
+            var time;
+            var tmp = getBeginDate().getTime();
+            var forecastBeginTime = getForecastBeginDate().getTime();
+            while (forecastBeginTime > tmp) {
+                time = tmp;
+                tmp += getResolution();
+            }
+            return undefined === time ? undefined : new Date(time);
+        }
+
         // UI component handler functions.
         //--------------------------------
 
@@ -440,6 +455,24 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         // Controller functions that call registered listener functions.
         //--------------------------------------------------------------
+
+        function showDefaultFrame() {
+            // Calculate new default frame position if it has not been set before or if current position is out of bounds.
+            if (_currentTime === undefined || _currentTime < getBeginDate() || _currentTime > getEndDate()) {
+                var lastObservationDate = getLastObservationDate();
+                if (undefined !== lastObservationDate) {
+                    // Use last observation position as default if it is available.
+                    _currentTime = lastObservationDate.getTime();
+
+                } else {
+                    // Use the first frame as current frame.
+                    _currentTime = getBeginDate().getTime();
+                }
+            }
+            MyController.events.triggerEvent("timechanged", {
+                time : _currentTime
+            });
+        }
 
         function changeToNextFrame() {
             if (_currentTime === undefined) {
