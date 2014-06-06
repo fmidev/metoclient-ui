@@ -1240,8 +1240,12 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     // Temporarily hold original options here because
                     // reset will clear the memeber variables.
                     var options = _options;
+                    // Temporarily hold current time. Keep that state after refresh.
+                    var currentTime = _currentTime;
                     // Reset whole animator.
                     _me.reset();
+                    // Set the previous current time state.
+                    _currentTime = currentTime;
                     // Initialize animation again with original options.
                     // This will load new animator content.
                     _me.init(options);
