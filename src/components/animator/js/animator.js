@@ -118,6 +118,10 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // Keeps track of the current time.
         var _currentTime;
 
+        // Flag value to inform if animation should be automatically started
+        // after animation content has been refreshed.
+        var _continueAnimationWhenLoadComplete = false;
+
         // Animation listeners are added here during registration.
         var _animationEventsListeners = [];
 
@@ -187,7 +191,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         _events.animationloadcomplete = function(event) {
             progressbarLoadComplete(event.layer);
-            if (_config.getAnimationAutoStart()) {
+            if (_config.getAnimationAutoStart() || _continueAnimationWhenLoadComplete) {
                 // Animation is started when loading has completed.
                 firePlay();
 
@@ -1238,17 +1242,22 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 // Proper interval value is provided in configuration.
                 var refreshTimeout = setTimeout(function() {
                     // Temporarily hold original options here because
-                    // reset will clear the memeber variables.
+                    // reset will clear the member variables.
                     var options = _options;
                     // Temporarily hold current time. Keep that state after refresh.
                     var currentTime = _currentTime;
+                    // Temporarily hold information about animation continuation after refresh.
+                    // If _requestAnimationTime has any value, it means that animation is going on.
+                    var continueAnimationWhenLoadComplete = (undefined !== _requestAnimationTime);
                     // Reset whole animator.
-                    _me.reset();
+                    reset();
+                    // Set the previous animation continuation state.
+                    _continueAnimationWhenLoadComplete = continueAnimationWhenLoadComplete;
                     // Set the previous current time state.
                     _currentTime = currentTime;
                     // Initialize animation again with original options.
                     // This will load new animator content.
-                    _me.init(options);
+                    init(options);
                 }, interval);
                 // Include timeout value into clear array to be sure that
                 // timer is cleared if animator is resetted by another parts
@@ -1317,6 +1326,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             _loadingLayers = [];
 
             // Reset member variables.
+            _continueAnimationWhenLoadComplete = false;
             _requestAnimationTime = undefined;
             _currentTime = undefined;
             _legendResize = undefined;
