@@ -164,6 +164,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         //--------------------------------------------
 
         _events.animationloadstarted = function(event) {
+            // If _requestAnimationTime has any value, it means that animation is going on.
+            if (undefined !== _requestAnimationTime) {
+                // Continue animation when tiles have been loaded because animation
+                // is paused during tile loading. Therefore, update continuation flag here.
+                // This check is required for window resize case.
+                _continueAnimationWhenLoadComplete = true;
+            }
             progressbarLoadStarted(event.layer);
             firePause();
             jQuery.each(_animationEventsListeners, function(index, value) {
@@ -192,6 +199,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         _events.animationloadcomplete = function(event) {
             progressbarLoadComplete(event.layer);
             if (_config.getAnimationAutoStart() || _continueAnimationWhenLoadComplete) {
+                // Reset continuation flag.
+                _continueAnimationWhenLoadComplete = false;
                 // Animation is started when loading has completed.
                 firePlay();
 
