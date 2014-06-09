@@ -41,8 +41,11 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
      * @param {Object} element
      * @param {Object} width
      * @param {Object} height
+     * @param {Integer} defaultTimePosition Default time in milliseconds for the animator slider position.
+     *                                      Time must be on proper resolution and inside scale area.
+     *                                      May be {undefined} or {null}. Then, beginning time is used.
      */
-    var _constructor = function(element, width, height) {
+    var _constructor = function(element, width, height, defaultTimePosition) {
         var _me = this;
 
         // See init function for member variable initializations and descriptions.
@@ -729,7 +732,20 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             jQuery([_sliderBg.node, _sliderLabel.node]).mousewheel(handleMouseScroll);
 
             // Move slider to the initial position.
-            moveSliderTo(getScaleAreaOffsetX());
+            if (undefined !== defaultTimePosition && null !== defaultTimePosition) {
+                // Default time has been given. So, move slider to the given position.
+                // Movement needs to be done asynchronously to make sure time position can be calculated properly.
+                // Hide slider during asynchronous process. Then, slider will be visible only in the proper position.
+                _slider.hide();
+                setTimeout(function() {
+                    moveSliderTo(timeToPos(defaultTimePosition));
+                    _slider.show();
+                }, 0);
+
+            } else {
+                // Scale beginning is used for the slider initial position.
+                moveSliderTo(getScaleAreaOffsetX());
+            }
         })();
 
         // Public functions.

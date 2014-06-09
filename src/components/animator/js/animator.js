@@ -1010,7 +1010,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *                                                    May not be {undefined} or {null}.
          */
         function createCtrl(ctrls, timeModel, timeController) {
-            var ac = new fi.fmi.metoclient.ui.animator.Controller(ctrls[0], ctrls.width(), ctrls.height());
+            var ac = new fi.fmi.metoclient.ui.animator.Controller(ctrls[0], ctrls.width(), ctrls.height(), _currentTime);
             ac.setTimeModel(timeModel);
             ac.setTimeController(timeController);
             return ac;
