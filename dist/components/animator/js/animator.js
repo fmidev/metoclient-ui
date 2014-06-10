@@ -2524,6 +2524,13 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             return getSliderBackgroundOffsetX() + _sliderConfig.sliderTipDx;
         }
 
+        /**
+         * @return {Integer} Slider default offset relative to the window.
+         */
+        function getDefaultSliderOffsetX() {
+            return getScaleAreaOffsetX() + getResolution() / getTimeScale();
+        }
+
         // Private controller functions.
         //------------------------------
 
@@ -2552,7 +2559,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         function getStartTime() {
-            return _model ? _model.getStartTime() : 0;
+            return _model ? _model.getStartTime() - getResolution() : 0;
         }
 
         function getEndTime() {
@@ -2586,7 +2593,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         function getTimeScale() {
-            return _model && getScaleAreaWidth() ? (_model.getEndTime() - _model.getStartTime()) / getScaleAreaWidth() : 1;
+            return _model && getScaleAreaWidth() ? (getEndTime() - getStartTime()) / getScaleAreaWidth() : 1;
         }
 
         // Private slider functions.
@@ -3125,20 +3132,20 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             jQuery([_sliderBg.node, _sliderLabel.node]).mousewheel(handleMouseScroll);
 
             // Move slider to the initial position.
-            if (undefined !== defaultTimePosition && null !== defaultTimePosition) {
-                // Default time has been given. So, move slider to the given position.
-                // Movement needs to be done asynchronously to make sure time position can be calculated properly.
-                // Hide slider during asynchronous process. Then, slider will be visible only in the proper position.
-                _slider.hide();
-                setTimeout(function() {
+            // Movement needs to be done asynchronously to make sure time position can be calculated properly.
+            // Hide slider during asynchronous process. Then, slider will be visible only in the proper position.
+            _slider.hide();
+            setTimeout(function() {
+                if (undefined !== defaultTimePosition && null !== defaultTimePosition) {
+                    // Default time has been given. So, move slider to the given position.
                     moveSliderTo(timeToPos(defaultTimePosition));
-                    _slider.show();
-                }, 0);
 
-            } else {
-                // Scale beginning is used for the slider initial position.
-                moveSliderTo(getScaleAreaOffsetX());
-            }
+                } else {
+                    // Scale beginning is used for the slider initial position.
+                    moveSliderTo(getDefaultSliderOffsetX());
+                }
+                _slider.show();
+            }, 0);
         })();
 
         // Public functions.
