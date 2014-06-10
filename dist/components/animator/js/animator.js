@@ -641,9 +641,9 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
 fi.fmi.metoclient.ui.animator.WfsCapabilities = (function() {
 
     // Delta time in ms to past when starttime is calcuated for WFS query.
-    var DELTA_TIME_PAST = 30 * 24 * 60 * 60 * 1000;
+    var DELTA_TIME_PAST = 1 * 24 * 60 * 60 * 1000;
     // Delta time in ms to future when endtime is calcuated for WFS query.
-    var DELTA_TIME_FUTURE = 30 * 24 * 60 * 60 * 1000;
+    var DELTA_TIME_FUTURE = 1 * 24 * 60 * 60 * 1000;
 
     // Ajax request constants and response XML constants.
     var HTTP_METHOD = "GET";
@@ -781,16 +781,19 @@ fi.fmi.metoclient.ui.animator.WfsCapabilities = (function() {
                         // in different domain or sub-domain than URL used for ajax,
                         // the callback may call error-function instead. Then,
                         // the XML body may not be available for parsing.
-                        jQuery(data).find(XML_GML_TIME_POSITION).each(function() {
-                            var layer = {
-                                name : options.capabilities.layer,
-                                dimensions : {
-                                    time : {
-                                        values : [(new Date(jQuery.trim(jQuery(this).text()))).getTime()]
-                                    }
+                        var layer = {
+                            name : options.capabilities.layer,
+                            dimensions : {
+                                time : {
+                                    values : []
                                 }
-                            };
-                            capabilities.capability.layers.push(layer);
+                            }
+                        };
+                        capabilities.capability.layers.push(layer);
+                        jQuery(data).find(XML_GML_TIME_POSITION).each(function() {
+                            // XML gives times in ascending order.
+                            // Also, capabilities layer object should give times in ascending order.
+                            layer.dimensions.time.values.push((new Date(jQuery.trim(jQuery(this).text()))).getTime());
                         });
                         handleCallback(options.callback, capabilities, errors);
                     },
@@ -1007,6 +1010,8 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  */
 fi.fmi.metoclient.ui.animator.Capabilities = (function() {
 
+    // Constants.
+    var TIME_RADIX = 10;
     // Error object keys.
     var KEY_ERROR_TEXT = "errorText";
 
@@ -1136,7 +1141,9 @@ fi.fmi.metoclient.ui.animator.Capabilities = (function() {
                     time = timeSplits[0];
                 }
             }
-            time = new Date(time);
+            // Time is expected to be time format string if it is not a number.
+            // Convert time value into Date object.
+            time = new Date(isNaN(time) ? time : parseInt(time, TIME_RADIX));
         }
         return time;
     }
@@ -1161,7 +1168,9 @@ fi.fmi.metoclient.ui.animator.Capabilities = (function() {
                     time = timeSplits[1];
                 }
             }
-            time = new Date(time);
+            // Time is expected to be time format string if it is not a number.
+            // Convert time value into Date object.
+            time = new Date(isNaN(time) ? time : parseInt(time, TIME_RADIX));
         }
         return time;
     }
@@ -1502,7 +1511,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
                         // Ignore errors that may occur in the callback.
                         // Callback may be provided from outside of this library.
                         if ("undefined" !== typeof console && console) {
-                            console.error("ERROR: Callback function error!");
+                            console.error("ERROR: Callback function error: " + e.toString());
                         }
                     }
                 }, 0);
@@ -2083,6 +2092,34 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         /**
          * See API for function description.
          */
+        function getAnimationRefreshInterval() {
+            return _config ? _config.animationRefreshInterval : undefined;
+        }
+
+        /**
+         * See API for function description.
+         */
+        function getAnimationAutoStart() {
+            return _config && _config.animationAutoStart ? true : false;
+        }
+
+        /**
+         * See API for function description.
+         */
+        function showAnimationInitProgress() {
+            return _config && _config.showAnimationInitProgress ? true : false;
+        }
+
+        /**
+         * See API for function description.
+         */
+        function showAnimationLoadProgress() {
+            return _config && _config.showAnimationLoadProgress ? true : false;
+        }
+
+        /**
+         * See API for function description.
+         */
         function getAnimationResolution() {
             // Set resolution once.
             if (_resolution === undefined) {
@@ -2288,6 +2325,26 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         this.getAnimationFrameRate = getAnimationFrameRate;
 
         /**
+         * @return {Integer} Refresh interval in milliseconds that is used for the animation.
+         */
+        this.getAnimationRefreshInterval = getAnimationRefreshInterval;
+
+        /**
+         * @return {Boolean} Animation is automatically started when content has been loaded if {true}. Else {false}.
+         */
+        this.getAnimationAutoStart = getAnimationAutoStart;
+
+        /**
+         * @return {Boolean} Load progress element is shown if {true}. Else {false}.
+         */
+        this.showAnimationInitProgress = showAnimationInitProgress;
+
+        /**
+         * @return {Boolean} Load progress element is shown if {true}. Else {false}.
+         */
+        this.showAnimationLoadProgress = showAnimationLoadProgress;
+
+        /**
          * @return {Integer} Animation resolution time in milliseconds that is used for the animation.
          */
         this.getAnimationResolution = getAnimationResolution;
@@ -2377,8 +2434,11 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
      * @param {Object} element
      * @param {Object} width
      * @param {Object} height
+     * @param {Integer} defaultTimePosition Default time in milliseconds for the animator slider position.
+     *                                      Time must be on proper resolution and inside scale area.
+     *                                      May be {undefined} or {null}. Then, beginning time is used.
      */
-    var _constructor = function(element, width, height) {
+    var _constructor = function(element, width, height, defaultTimePosition) {
         var _me = this;
 
         // See init function for member variable initializations and descriptions.
@@ -3065,7 +3125,20 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             jQuery([_sliderBg.node, _sliderLabel.node]).mousewheel(handleMouseScroll);
 
             // Move slider to the initial position.
-            moveSliderTo(getScaleAreaOffsetX());
+            if (undefined !== defaultTimePosition && null !== defaultTimePosition) {
+                // Default time has been given. So, move slider to the given position.
+                // Movement needs to be done asynchronously to make sure time position can be calculated properly.
+                // Hide slider during asynchronous process. Then, slider will be visible only in the proper position.
+                _slider.hide();
+                setTimeout(function() {
+                    moveSliderTo(timeToPos(defaultTimePosition));
+                    _slider.show();
+                }, 0);
+
+            } else {
+                // Scale beginning is used for the slider initial position.
+                moveSliderTo(getScaleAreaOffsetX());
+            }
         })();
 
         // Public functions.
@@ -3209,6 +3282,15 @@ if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Controller || !fi.fmi.m
  */
 fi.fmi.metoclient.ui.animator.Animator = (function() {
 
+    // Constant variables.
+
+    // Time for debounce function.
+    var DEBOUNCE_TIME = 10;
+    // Maximum time for debounce function.
+    var DEBOUNCE_MAX_TIME = 100;
+
+    // Instance independent functions.
+
     /**
      * Controller object.
      *
@@ -3259,6 +3341,10 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // Keeps track of the current time.
         var _currentTime;
 
+        // Flag value to inform if animation should be automatically started
+        // after animation content has been refreshed.
+        var _continueAnimationWhenLoadComplete = false;
+
         // Animation listeners are added here during registration.
         var _animationEventsListeners = [];
 
@@ -3301,6 +3387,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         //--------------------------------------------
 
         _events.animationloadstarted = function(event) {
+            // If _requestAnimationTime has any value, it means that animation is going on.
+            if (undefined !== _requestAnimationTime) {
+                // Continue animation when tiles have been loaded because animation
+                // is paused during tile loading. Therefore, update continuation flag here.
+                // This check is required for window resize case.
+                _continueAnimationWhenLoadComplete = true;
+            }
             progressbarLoadStarted(event.layer);
             firePause();
             jQuery.each(_animationEventsListeners, function(index, value) {
@@ -3328,7 +3421,16 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         _events.animationloadcomplete = function(event) {
             progressbarLoadComplete(event.layer);
-            firePlay();
+            if (_config.getAnimationAutoStart() || _continueAnimationWhenLoadComplete) {
+                // Reset continuation flag.
+                _continueAnimationWhenLoadComplete = false;
+                // Animation is started when loading has completed.
+                firePlay();
+
+            } else {
+                // Animation is not started, but show default frame.
+                showDefaultFrame();
+            }
             jQuery.each(_animationEventsListeners, function(index, value) {
                 value.loadCompleteCb(event);
             });
@@ -3381,7 +3483,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                         // Ignore errors that may occur in the callback.
                         // Callback may be provided from outside of this library.
                         if ("undefined" !== typeof console && console) {
-                            console.error("ERROR: Callback function error!");
+                            console.error("ERROR: Callback function error: " + e.toString());
                         }
                     }
                 }, 0);
@@ -3390,6 +3492,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         /**
          * Callback for configuration {init} function call.
+         *
+         * Uses asynchronous function before handling callback.
          *
          * See more details from {init} function for {options} and {errors} parameters.
          *
@@ -3405,17 +3509,29 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 if ("undefined" !== typeof console && console) {
                     console.error("ERROR: Animator config init errors. Animation is not created!");
                 }
+                // Handle callback after asynchronous initialization.
+                handleCallback(options.callback, errors);
 
             } else {
-                // Use options and configuration object to set map and layers.
-                setMapAndLayers();
+                try {
+                    // Use options and configuration object to set map and layers.
+                    setMapAndLayers();
 
-                // Create slider. Notice, this will set itself according to the options.
-                createController();
+                    // Create slider. Notice, this will set itself according to the options.
+                    createController(errors, function() {
+                        // Handle callback after asynchronous initialization.
+                        handleCallback(options.callback, errors);
+                    });
+
+                } catch(e) {
+                    var errorStr = "ERROR: ConfigInitCallback: " + e.toString();
+                    errors.push(errorStr);
+                    if ("undefined" !== typeof console && console) {
+                        console.error(errorStr);
+                    }
+                    handleCallback(options.callback, errors);
+                }
             }
-
-            // Handle callback after asynchronous initialization.
-            handleCallback(options.callback, errors);
         }
 
         // Utils functions.
@@ -3432,8 +3548,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         function createDebounce(f) {
             var debounce;
             if (_.isFunction(f)) {
-                debounce = _.debounce(f, 10, {
-                    maxWait : 100
+                debounce = _.debounce(f, DEBOUNCE_TIME, {
+                    maxWait : DEBOUNCE_MAX_TIME
                 });
             }
             return debounce;
@@ -3450,7 +3566,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          */
         function progressbarLoadStarted(layer) {
             if (layer && -1 === jQuery.inArray(layer, _loadingLayers)) {
-                if (!_loadingLayers.length) {
+                if (!_loadingLayers.length && _config.showAnimationLoadProgress()) {
                     // First layer to start loading.
                     // So, start showing progressbar.
                     jQuery(".animatorLoadProgressbar").show();
@@ -3516,6 +3632,21 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             return _config.getForecastBeginDate();
         }
 
+        /**
+         * @return {Date} The last observation date of the whole animation.
+         *                {undefined} if animation does not have observations.
+         */
+        function getLastObservationDate() {
+            var time;
+            var tmp = getBeginDate().getTime();
+            var forecastBeginTime = getForecastBeginDate().getTime();
+            while (forecastBeginTime > tmp) {
+                time = tmp;
+                tmp += getResolution();
+            }
+            return undefined === time ? undefined : new Date(time);
+        }
+
         // UI component handler functions.
         //--------------------------------
 
@@ -3560,6 +3691,24 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         // Controller functions that call registered listener functions.
         //--------------------------------------------------------------
+
+        function showDefaultFrame() {
+            // Calculate new default frame position if it has not been set before or if current position is out of bounds.
+            if (_currentTime === undefined || _currentTime < getBeginDate() || _currentTime > getEndDate()) {
+                var lastObservationDate = getLastObservationDate();
+                if (undefined !== lastObservationDate) {
+                    // Use last observation position as default if it is available.
+                    _currentTime = lastObservationDate.getTime();
+
+                } else {
+                    // Use the first frame as current frame.
+                    _currentTime = getBeginDate().getTime();
+                }
+            }
+            MyController.events.triggerEvent("timechanged", {
+                time : _currentTime
+            });
+        }
 
         function changeToNextFrame() {
             if (_currentTime === undefined) {
@@ -4055,7 +4204,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                         setLayers(map, layers);
                     }
                     // Zoom the map after layers have been inserted.
-                    map.setCenter(map.getCenter(), _config.getDefaultZoomLevel());
+                    var mapCenter = map.getCenter();
+                    if (!mapCenter) {
+                        // Map may not have center available even if it has been defined in config.
+                        // Then, calculate center from the maximum extent to make sure map can be shown.
+                        mapCenter = map.getMaxExtent().getCenterLonLat();
+                    }
+                    map.setCenter(mapCenter, _config.getDefaultZoomLevel());
                     setupSwitcher(map, _options.layerSwitcherDivId, _options.maximizeSwitcher);
                 }
             }
@@ -4087,7 +4242,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *                                                    May not be {undefined} or {null}.
          */
         function createCtrl(ctrls, timeModel, timeController) {
-            var ac = new fi.fmi.metoclient.ui.animator.Controller(ctrls[0], ctrls.width(), ctrls.height());
+            var ac = new fi.fmi.metoclient.ui.animator.Controller(ctrls[0], ctrls.width(), ctrls.height(), _currentTime);
             ac.setTimeModel(timeModel);
             ac.setTimeController(timeController);
             return ac;
@@ -4095,108 +4250,138 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         /**
          * Create time controller and set it into the UI according to the options that have been set during init.
+         *
+         * Asynchronous function calls {cb} when whole creation operation is complete.
+         *
+         * @param {Array} errors Array that contains possible error objects.
+         *                       May not be {undefined} or {null}.
+         * @param {Function} cb Callback function that is called when creation is complete.
+         *                      May not be {undefined} or {null}.
          */
-        function createController() {
-            if (!_options || !_options.controllerDivId || !_options.playAndPauseDivId) {
-                throw "ERROR: Options or properties missing for controller!";
-            }
+        function createController(errors, cb) {
+            // Because parts of the function need to be asynchronous,
+            // make the whole function to be asynchronous.
+            // Then, error and success cases can be handled consistently.
+            setTimeout(function() {
+                try {
+                    if (!_options || !_options.controllerDivId || !_options.playAndPauseDivId) {
+                        errors.push("ERROR: Options or properties missing for controller!");
 
-            // Do not create controller if animation has not defined any time period for frames.
-            // If no period is given, then only show currently given layers.
-            if (getBeginDate() !== undefined && getEndDate() !== undefined) {
-                var ctrlSelector = "#" + _options.controllerDivId;
-                var ctrls = jQuery(ctrlSelector);
-                if (ctrls.length) {
-                    var currentTime = (new Date()).getTime();
-                    var startTime = getBeginDate().getTime();
-                    var endTime = getEndDate().getTime();
-                    // Forecast start time.
-                    var fctStart = getForecastBeginDate().getTime();
-                    // If end time is less than forecast time, then forecast is not used and value is left undefined.
-                    if (endTime < fctStart) {
-                        fctStart = undefined;
-                    }
-                    var timePeriodListeners = [];
-                    var timeSelectionListeners = [];
-                    var fctStartTimeListeners = [];
-                    var tickIntervalListeners = [];
+                    } else {
+                        // Do not create controller if animation has not defined any time period for frames.
+                        // If no period is given, then only show currently given layers.
+                        if (getBeginDate() !== undefined && getEndDate() !== undefined) {
+                            var ctrlSelector = "#" + _options.controllerDivId;
+                            var ctrls = jQuery(ctrlSelector);
+                            if (ctrls.length) {
+                                var currentTime = (new Date()).getTime();
+                                var startTime = getBeginDate().getTime();
+                                var endTime = getEndDate().getTime();
+                                // Forecast start time.
+                                var fctStart = getForecastBeginDate().getTime();
+                                // If end time is less than forecast time, then forecast is not used and value is left undefined.
+                                if (endTime < fctStart) {
+                                    fctStart = undefined;
+                                }
+                                var timePeriodListeners = [];
+                                var timeSelectionListeners = [];
+                                var fctStartTimeListeners = [];
+                                var tickIntervalListeners = [];
 
-                    // Model is used by animation controller to setup slider according to the animation settings.
-                    var timeModel = {
-                        getStartTime : function() {
-                            return startTime;
-                        },
-                        getEndTime : function() {
-                            return endTime;
-                        },
-                        getResolution : function() {
-                            return getResolution();
-                        },
-                        getForecastStartTime : function() {
-                            return fctStart;
-                        },
-                        addTimePeriodChangeListener : function(l) {
-                            timePeriodListeners.push(l);
-                        },
-                        addTimeSelectionChangeListener : function(l) {
-                            timeSelectionListeners.push(l);
-                        },
-                        addAnimationEventsListener : function(l) {
-                            _animationEventsListeners.push(l);
-                        },
-                        addForecastStartTimeChangeListener : function(l) {
-                            fctStartTimeListeners.push(l);
-                        },
-                        addTickIntervalChangeListener : function(l) {
-                            tickIntervalListeners.push(l);
-                        }
-                    };
+                                // Model is used by animation controller to setup slider according to the animation settings.
+                                var timeModel = {
+                                    getStartTime : function() {
+                                        return startTime;
+                                    },
+                                    getEndTime : function() {
+                                        return endTime;
+                                    },
+                                    getResolution : function() {
+                                        return getResolution();
+                                    },
+                                    getForecastStartTime : function() {
+                                        return fctStart;
+                                    },
+                                    addTimePeriodChangeListener : function(l) {
+                                        timePeriodListeners.push(l);
+                                    },
+                                    addTimeSelectionChangeListener : function(l) {
+                                        timeSelectionListeners.push(l);
+                                    },
+                                    addAnimationEventsListener : function(l) {
+                                        _animationEventsListeners.push(l);
+                                    },
+                                    addForecastStartTimeChangeListener : function(l) {
+                                        fctStartTimeListeners.push(l);
+                                    },
+                                    addTickIntervalChangeListener : function(l) {
+                                        tickIntervalListeners.push(l);
+                                    }
+                                };
 
-                    // Animation controller may use these callback functions to inform
-                    // if animation state should be changed because of the actions in the slider.
-                    var timeController = {
-                        proposeTimePeriodChange : function(startTime, endTime) {
+                                // Animation controller may use these callback functions to inform
+                                // if animation state should be changed because of the actions in the slider.
+                                var timeController = {
+                                    proposeTimePeriodChange : function(startTime, endTime) {
 
-                        },
-                        proposeTimeSelectionChange : function(time) {
-                            if ((time >= startTime) && (time <= endTime)) {
-                                // Make sure steps are in given resolutions.
-                                time = time - time % getResolution();
-                                fireSelectedTimeChanged(time, timeSelectionListeners);
+                                    },
+                                    proposeTimeSelectionChange : function(time) {
+                                        if ((time >= startTime) && (time <= endTime)) {
+                                            // Make sure steps are in given resolutions.
+                                            time = time - time % getResolution();
+                                            fireSelectedTimeChanged(time, timeSelectionListeners);
+                                        }
+                                    },
+                                    proposeNextFrame : function() {
+                                        fireNextFrame();
+                                    },
+                                    proposePreviousFrame : function() {
+                                        firePreviousFrame();
+                                    },
+                                    proposePause : function() {
+                                        firePause();
+                                    }
+                                };
+
+                                setPlayAndPause();
+
+                                // Controller needs to be created asynchronously.
+                                // Otherwise, its width may not be properly set.
+                                setTimeout(function() {
+                                    _animationController = createCtrl(ctrls, timeModel, timeController);
+
+                                    // Bind to listen for width changes in element to update
+                                    // controller if necessary. Width is defined as relative
+                                    // in CSS but height is static.
+                                    var width = ctrls.width();
+                                    // Notice, the window resize listener has already been set during animator construction.
+                                    // Use debounce to limit frequency of component redraw operations.
+                                    _animationControllerResize = createDebounce(function() {
+                                        var currentWidth = jQuery(ctrlSelector).width();
+                                        if (currentWidth !== width) {
+                                            width = currentWidth;
+                                            // Simply replace old with a new controller.
+                                            _animationController.remove();
+                                            _animationController = createCtrl(ctrls, timeModel, timeController);
+                                        }
+                                    });
+                                }, 0);
                             }
-                        },
-                        proposeNextFrame : function() {
-                            fireNextFrame();
-                        },
-                        proposePreviousFrame : function() {
-                            firePreviousFrame();
-                        },
-                        proposePause : function() {
-                            firePause();
                         }
-                    };
+                    }
 
-                    _animationController = createCtrl(ctrls, timeModel, timeController);
+                } catch(e) {
+                    var errorStr = "ERROR: ConfigInitCallback: " + e.toString();
+                    errors.push(errorStr);
+                    if ("undefined" !== typeof console && console) {
+                        console.error(errorStr);
+                    }
 
-                    // Bind to listen for width changes in element to update
-                    // controller if necessary. Width is defined as relative
-                    // in CSS but height is static.
-                    var width = ctrls.width();
-                    // Notice, the window resize listener has already been set during animator construction.
-                    // Use debounce to limit frequency of component redraw operations.
-                    _animationControllerResize = createDebounce(function() {
-                        var currentWidth = jQuery(ctrlSelector).width();
-                        if (currentWidth !== width) {
-                            width = currentWidth;
-                            // Simply replace old with a new controller.
-                            _animationController.remove();
-                            _animationController = createCtrl(ctrls, timeModel, timeController);
-                        }
-                    });
-
-                    setPlayAndPause();
+                } finally {
+                    // Inform that operation is complete.
+                    cb();
                 }
-            }
+            }, 0);
         }
 
         /**
@@ -4267,8 +4452,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 }
                 // Progress bar is included into structure here.
                 // Then, it is available during asynchronous initializations.
-                if (options.animationDivId) {
-                    // Add progressbar element.
+                if (options.animationDivId && (_config.showAnimationInitProgress() || _config.showAnimationLoadProgress())) {
+                    // Add progressbar element if configuration defines it should be shown.
                     var loadProgressbar = jQuery('<div class="animatorLoadProgressbar"></div>');
                     jQuery("#" + options.animationDivId).append(loadProgressbar);
                     loadProgressbar.progressbar({
@@ -4277,6 +4462,39 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     // Make sure progress bar element is hidden as default.
                     loadProgressbar.hide();
                 }
+            }
+        }
+
+        /**
+         * Start animation content refresh interval if defined in configuration.
+         */
+        function setRefreshInterval() {
+            var interval = _config.getAnimationRefreshInterval();
+            if (interval && interval > 0) {
+                // Proper interval value is provided in configuration.
+                var refreshTimeout = setTimeout(function() {
+                    // Temporarily hold original options here because
+                    // reset will clear the member variables.
+                    var options = _options;
+                    // Temporarily hold current time. Keep that state after refresh.
+                    var currentTime = _currentTime;
+                    // Temporarily hold information about animation continuation after refresh.
+                    // If _requestAnimationTime has any value, it means that animation is going on.
+                    var continueAnimationWhenLoadComplete = (undefined !== _requestAnimationTime);
+                    // Reset whole animator.
+                    reset();
+                    // Set the previous animation continuation state.
+                    _continueAnimationWhenLoadComplete = continueAnimationWhenLoadComplete;
+                    // Set the previous current time state.
+                    _currentTime = currentTime;
+                    // Initialize animation again with original options.
+                    // This will load new animator content.
+                    init(options);
+                }, interval);
+                // Include timeout value into clear array to be sure that
+                // timer is cleared if animator is resetted by another parts
+                // of the flow.
+                _resetClearTimeouts.push(refreshTimeout);
             }
         }
 
@@ -4340,6 +4558,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             _loadingLayers = [];
 
             // Reset member variables.
+            _continueAnimationWhenLoadComplete = false;
             _requestAnimationTime = undefined;
             _currentTime = undefined;
             _legendResize = undefined;
@@ -4361,15 +4580,18 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 try {
                     // Set options and create config only once.
                     _options = options;
-                    // Create animation structure for the content.
-                    // Then, progressbar may be shown during asyncronous initializations.
-                    createStructure(options);
                     // Configuration object is deep cloned here.
                     // Then, if properties are changed during the flow, the content of the original object is not changed.
                     _config = new fi.fmi.metoclient.ui.animator.Factory(_.cloneDeep(options.config || fi.fmi.metoclient.ui.animator.Config, cloneDeepCallback));
+                    // Create animation structure for the content.
+                    // Then, progressbar may be shown during asyncronous initializations.
+                    createStructure(options);
+                    setRefreshInterval();
                     // Start asynchronous initialization.
-                    // Also, show progressbar during asynchronous operation.
-                    jQuery(".animatorLoadProgressbar").show();
+                    if (_config.showAnimationInitProgress()) {
+                        // Also, show progressbar during asynchronous operation.
+                        jQuery(".animatorLoadProgressbar").show();
+                    }
                     _config.init(function(factory, errors) {
                         // Asynchronous initialization is over.
                         // Hide the progressbar.

@@ -2097,12 +2097,17 @@ OpenLayers.Layer.Animation.LayerContainer = OpenLayers.Class({
         var _animationOpacity = 1;
         // Array to contain opacity values for fade out steps. May be undefined.
         var _fadeOutOpacities;
-        var _defaultFadeOutTimeMs = 200;
+
+        // Notice, if fade-out value is much greater than 200 ms, animation may start to look blurry.
+        // Also, it is hard to find a good compromise for fade-out value because of various animation
+        // contents and framerates. Therefore, this value is set to zero as default. Then, animation
+        // frame changes are sharp.
+        var _defaultFadeOutTimeMs = 0;
         var _defaultFadeOutTimingFunction = "ease-out";
-        // Notice, if fade-in value is much greater, animation may look like pulsing
-        // if frame images overlap with fade-out frames. Therefore, this value is set close
-        // to zero as a default.
-        var _defaultFadeInTimeMs = 50;
+        // Notice, if fade-in value is much greater than 50ms, animation may look like pulsing
+        // if frame images overlap with fade-out frames. Therefore, this value is set to zero
+        // as a default. Then, animation frame changes are sharp.
+        var _defaultFadeInTimeMs = 0;
         var _defaultFadeInTimingFunction = "ease-out";
 
         // Member variables that are updated in the operations.
@@ -3385,12 +3390,6 @@ OpenLayers.Layer.Animation.LayerObject = OpenLayers.Class({
         _events.loadstart = function(event) {
             resetState();
             _state.id = _STATE_LOADING;
-            // Layer olTileImage div is created before image loading is started.
-            // Therefore, the style of that element can be handled here.
-            // In this library, opacity transitions of frames are handled by JS
-            // separately and general OpenLayers CSS opacity transition settings
-            // are ignored. Then, possible flickering during animation can be avoided.
-            setCssTransition("opacity 0");
             if (observer) {
                 observer.layerLoadStartCallback(_me);
             }
@@ -3402,6 +3401,13 @@ OpenLayers.Layer.Animation.LayerObject = OpenLayers.Class({
             // undefined because also layer has been released from this object.
             if (_state.id) {
                 _state.id = _STATE_READY;
+                // Layer olTileImage div is created before image loading is started.
+                // But, all tiles are available only after load has ended. Therefore,
+                // the style of that element can be handled here. In this library,
+                // opacity transitions of frames are handled by JS separately and
+                // general OpenLayers CSS opacity transition settings are ignored.
+                // Then, possible flickering during animation can be avoided.
+                setCssTransition("opacity 0");
                 if (observer) {
                     observer.layerLoadEndCallback(_me);
                 }

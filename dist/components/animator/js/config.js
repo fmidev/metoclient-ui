@@ -33,6 +33,8 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  *     // and {args} array. Also, parameters for capability requests may be given in {capabilities}
  *     // object that may also be left {undefined} if capability requests are not required.
  *     // Capabilities {url} and {layer} are mandatory if capability requests are required.
+ *     // Capabilities {storedQueryId} is mandatory if capabilities uses WFS instead of WMS.
+ *     // WFS may provide faster capabilities responses than WMS from the server.
  *     // Capabilities data is required if "auto" or "join" strings are used with {beginTime} and
  *     // {endTime} properties of layers and sub-layers.
  *
@@ -48,7 +50,7 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  *     layers :
  *         [
  *             { className : {String}, args : [ {String|Object|etc}, ... ],
- *               capabilities : { url : {String}, layer : {String} } },
+ *               capabilities : { url : {String}, layer : {String}, storedQueryId : {String} } },
  *             ...
  *         ],
  *
@@ -144,6 +146,10 @@ fi.fmi.metoclient.ui.animator.Config = {
         //     // URL for capability requests.
         //     // URL is mandatory if capability requests are required.
         //     url : "http://wms.fmi.fi/fmi-apikey/insert-your-apikey-here/geoserver/wms",
+        //     // Or, alternatively WFS URL could be used.
+        //     // url : "http://data.fmi.fi/fmi-apikey/insert-your-apikey-here/wfs",
+        //     // Storedquery ID is mandatory if WFS is used.
+        //     // storedQueryId : "fmi::radar::composite::rr",
         //     // Layer identifier should be same as the identifier used with the layer object
         //     // that wraps this capabilities object. Layer identifier is mandatory.
         //     layer : "Radar:suomi_rr_eureffin"
@@ -199,7 +205,10 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // For forecasts we use different layer.
                 // Notice, we do not need to define default layer here again.
                 layers : [{
-                    layer : "Weather:precipitation-forecast",
+                    layer : "Radar:suomi_tuliset_rr_eureffin",
+                    // Storedquery ID is required if WFS instead of WMS is used for capabilities.
+                    // storedQueryId : "fmi::forecast::tuliset::rr",
+
                     // Forecasts are future data. So, begin time is from now if parent
                     // layer provides frames up to present moment.
                     //
@@ -276,6 +285,10 @@ fi.fmi.metoclient.ui.animator.Config = {
         //     // URL for capability requests.
         //     // URL is mandatory if capability requests are required.
         //     url : "http://wms.fmi.fi/fmi-apikey/insert-your-apikey-here/geoserver/wms",
+        //     // Or, alternatively WFS URL could be used.
+        //     // url : "http://data.fmi.fi/fmi-apikey/insert-your-apikey-here/wfs",
+        //     // Storedquery ID is mandatory if WFS is used.
+        //     // storedQueryId : "fmi::radar::composite::dbz",
         //     // Layer identifier should be same as the identifier used with the layer object
         //     // that wraps this capabilities object. Layer identifier is mandatory.
         //     layer : "Radar:suomi_dbz_eureffin"
@@ -464,6 +477,22 @@ fi.fmi.metoclient.ui.animator.Config = {
     // these values are used for the animation layer automatically as default.
     // If animation configuration is not set, framework checks layer configurations
     // to check the smallest begin time, greatest end time, and greatest resolution time.
+
+    // Animation is automatically started when content has been loaded if set {true}.
+    // Animation is not automatically started if {undefined}, {null} or {false}.
+    animationAutoStart : false,
+
+    // Animation shows progress element during asynchronous initialization if set {true}.
+    // Element not shown if {undefined}, {null} or {false}.
+    showAnimationInitProgress : true,
+    // Animation shows progress element during asynchronous content loading if set {true}.
+    // Element not shown if {undefined}, {null} or {false}.
+    showAnimationLoadProgress : true,
+
+    // Animation refresh interval in ms defines how often animation content
+    // should be refreshed by reloading content. Animation is not refreshed
+    // if {undefined}, {null} or less or equal to zero.
+    animationRefreshInterval : 15 * 60 * 1000,
 
     // Animation frame rate in ms.
     animationFrameRate : 500,
