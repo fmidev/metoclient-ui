@@ -18,7 +18,8 @@ fi.fmi.metoclient.ui.animator.Config = {
             units : "m",
             resolutions : [2048, 1024, 512, 256, 128, 64],
             maxExtent : [-4537345.568, 3840856.936, 2889342.313, 8254755.58],
-            restrictedExtent : [-118331.366408356, 6335621.16701424, 875567.731906565, 7907751.53726352]
+            restrictedExtent : [-118331.366408356, 6335621.16701424, 875567.731906565, 7907751.53726352],
+            center : [400000, 7150000]
         }]
     },
 
@@ -87,7 +88,7 @@ fi.fmi.metoclient.ui.animator.Config = {
         }]
     }],
 
-    defaultZoomLevel : 0,
+    defaultZoomLevel : 1,
     animationRefreshInterval : 15 * 60 * 1000,
     animationFrameRate : 500,
     animationResolutionTime : 15 * 60 * 1000,
