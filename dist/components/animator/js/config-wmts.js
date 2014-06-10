@@ -16,8 +16,7 @@ fi.fmi.metoclient.ui.animator.Config = {
             allOverlays : true,
             projection : 'EPSG:3067',
             units : "m",
-            numOfZoomLevels : 8,
-            resolutions : [8192, 4096, 2048, 1024, 512, 256, 128, 64],
+            resolutions : [2048, 1024, 512, 256, 128, 64],
             maxExtent : [-4537345.568, 3840856.936, 2889342.313, 8254755.58],
             restrictedExtent : [-118331.366408356, 6335621.16701424, 875567.731906565, 7907751.53726352]
         }]
@@ -33,10 +32,6 @@ fi.fmi.metoclient.ui.animator.Config = {
             style : "",
             matrixSet : "ETRS-TM35FIN",
             matrixIds : [{
-                identifier : "ETRS-TM35FIN:0"
-            }, {
-                identifier : "ETRS-TM35FIN:1"
-            }, {
                 identifier : "ETRS-TM35FIN:2"
             }, {
                 identifier : "ETRS-TM35FIN:3"
@@ -65,10 +60,6 @@ fi.fmi.metoclient.ui.animator.Config = {
             maxExtent : [-118331.366408356, 6335621.16701424, 875567.731906565, 7907751.53726352],
             matrixSet : "ETRS-TM35FIN-FINLAND",
             matrixIds : [{
-                identifier : "ETRS-TM35FIN-FINLAND:0"
-            }, {
-                identifier : "ETRS-TM35FIN-FINLAND:1"
-            }, {
                 identifier : "ETRS-TM35FIN-FINLAND:2"
             }, {
                 identifier : "ETRS-TM35FIN-FINLAND:3"
@@ -96,7 +87,7 @@ fi.fmi.metoclient.ui.animator.Config = {
         }]
     }],
 
-    defaultZoomLevel : 2,
+    defaultZoomLevel : 0,
     animationRefreshInterval : 15 * 60 * 1000,
     animationFrameRate : 500,
     animationResolutionTime : 15 * 60 * 1000,
