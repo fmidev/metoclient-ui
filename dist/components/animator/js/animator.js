@@ -3352,6 +3352,11 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // after animation content has been refreshed.
         var _continueAnimationWhenLoadComplete = false;
 
+        // Default zoom level and center information is set here for
+        // animator reinitialization when animator is refreshing its content.
+        var _refreshDefaultZoomLevel;
+        var _refreshDefaultCenter;
+
         // Animation listeners are added here during registration.
         var _animationEventsListeners = [];
 
@@ -4211,13 +4216,14 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                         setLayers(map, layers);
                     }
                     // Zoom the map after layers have been inserted.
-                    var mapCenter = map.getCenter();
+                    // Map center refresh value is used if it is available.
+                    var mapCenter = _refreshDefaultCenter || map.getCenter();
                     if (!mapCenter) {
                         // Map may not have center available even if it has been defined in config.
                         // Then, calculate center from the maximum extent to make sure map can be shown.
                         mapCenter = map.getMaxExtent().getCenterLonLat();
                     }
-                    map.setCenter(mapCenter, _config.getDefaultZoomLevel());
+                    map.setCenter(mapCenter, undefined === _refreshDefaultZoomLevel ? _config.getDefaultZoomLevel() : _refreshDefaultZoomLevel);
                     setupSwitcher(map, _options.layerSwitcherDivId, _options.maximizeSwitcher);
                 }
             }
@@ -4485,13 +4491,19 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     var options = _options;
                     // Temporarily hold current time. Keep that state after refresh.
                     var currentTime = _currentTime;
-                    // Temporarily hold information about animation continuation after refresh.
+                    // Temporarily hold information about animation continuation for refresh.
                     // If _requestAnimationTime has any value, it means that animation is going on.
                     var continueAnimationWhenLoadComplete = (undefined !== _requestAnimationTime);
+                    // Temporarily hold information about animation center and zoom state for refresh.
+                    var refreshDefaultCenter = _config.getMap().getCenter();
+                    var refreshDefaultZoomLevel = _config.getMap().getZoom();
                     // Reset whole animator.
                     reset();
                     // Set the previous animation continuation state.
                     _continueAnimationWhenLoadComplete = continueAnimationWhenLoadComplete;
+                    // Set the previous animation center and zoom state.
+                    _refreshDefaultCenter = refreshDefaultCenter;
+                    _refreshDefaultZoomLevel = refreshDefaultZoomLevel;
                     // Set the previous current time state.
                     _currentTime = currentTime;
                     // Initialize animation again with original options.
@@ -4566,6 +4578,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
             // Reset member variables.
             _continueAnimationWhenLoadComplete = false;
+            _refreshDefaultZoomLevel = undefined;
             _requestAnimationTime = undefined;
             _currentTime = undefined;
             _legendResize = undefined;
