@@ -4578,6 +4578,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
             // Reset member variables.
             _continueAnimationWhenLoadComplete = false;
+            _refreshDefaultCenter = undefined;
             _refreshDefaultZoomLevel = undefined;
             _requestAnimationTime = undefined;
             _currentTime = undefined;
