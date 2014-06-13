@@ -16,7 +16,7 @@ fi.fmi.metoclient.ui.animator.Config = {
             allOverlays : true,
             projection : 'EPSG:3067',
             units : "m",
-            resolutions : [2048, 1024, 512, 256, 128, 64],
+            resolutions : [2048, 1024, 512, 256],
             maxExtent : [-4537345.568, 3840856.936, 2889342.313, 8254755.58],
             restrictedExtent : [-118331.366408356, 6335621.16701424, 875567.731906565, 7907751.53726352],
             center : [400000, 7150000]
@@ -40,10 +40,6 @@ fi.fmi.metoclient.ui.animator.Config = {
                 identifier : "ETRS-TM35FIN:4"
             }, {
                 identifier : "ETRS-TM35FIN:5"
-            }, {
-                identifier : "ETRS-TM35FIN:6"
-            }, {
-                identifier : "ETRS-TM35FIN:7"
             }]
         }]
     }, {
@@ -68,10 +64,6 @@ fi.fmi.metoclient.ui.animator.Config = {
                 identifier : "ETRS-TM35FIN-FINLAND:4"
             }, {
                 identifier : "ETRS-TM35FIN-FINLAND:5"
-            }, {
-                identifier : "ETRS-TM35FIN-FINLAND:6"
-            }, {
-                identifier : "ETRS-TM35FIN-FINLAND:7"
             }],
             animation : {
                 layers : [{
