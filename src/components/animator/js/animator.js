@@ -126,6 +126,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // animator reinitialization when animator is refreshing its content.
         var _refreshDefaultZoomLevel;
         var _refreshDefaultCenter;
+        var _refreshDefaultLayerVisibilities;
 
         // Animation listeners are added here during registration.
         var _animationEventsListeners = [];
@@ -1034,6 +1035,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         function setLayers(map, layers) {
             for (var i = 0; i < layers.length; ++i) {
                 var layer = layers[i];
+                if (_refreshDefaultLayerVisibilities && _refreshDefaultLayerVisibilities.length === layers.length) {
+                    // Keep layer visiblity state during animation refresh.
+                    var visibility = _refreshDefaultLayerVisibilities[i];
+                    if (visibility !== layer.getVisibility()) {
+                        layer.setVisibility(visibility);
+                    }
+                }
                 if (layer.registerController) {
                     // Layer has the required function.
                     // Register layer to listen animation related controller events.
@@ -1061,8 +1069,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     map.render(_options.mapDivId);
                     var layers = _config.getLayers();
                     if (layers) {
-                        // Set listeners to update legend according to animation layer events.
-                        setAnimationLegendEventListener(layers);
                         setLayers(map, layers);
                         // Create legend and controller asynchronously to make sure
                         // proper information is used immediately after layers are
@@ -1080,6 +1086,9 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                             // started synchronous operations for legend and controller
                             // are finished before layer events are triggered.
                             createController();
+                            // Set listeners to update legend according to animation layer events.
+                            setAnimationLegendEventListener(layers);
+                            setupSwitcher(map, _options.layerSwitcherDivId, _options.maximizeSwitcher);
                         }, 0);
                     }
                     // Zoom the map after layers have been inserted.
@@ -1091,7 +1100,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                         mapCenter = map.getMaxExtent().getCenterLonLat();
                     }
                     map.setCenter(mapCenter, undefined === _refreshDefaultZoomLevel ? _config.getDefaultZoomLevel() : _refreshDefaultZoomLevel);
-                    setupSwitcher(map, _options.layerSwitcherDivId, _options.maximizeSwitcher);
                 }
             }
         }
@@ -1115,6 +1123,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 if ("undefined" !== typeof console && console) {
                     console.error("ERROR: Animator config init errors. Animation is not created!");
                 }
+                // Reset array after initialization because values are not needed after that.
+                _refreshDefaultLayerVisibilities = undefined;
                 // Handle callback after asynchronous initialization.
                 handleCallback(options.callback, errors);
 
@@ -1132,6 +1142,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     }
 
                 } finally {
+                    // Reset array after initialization because values are not needed after that.
+                    _refreshDefaultLayerVisibilities = undefined;
                     handleCallback(options.callback, errors);
                 }
             }
@@ -1237,6 +1249,10 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     // Temporarily hold information about animation center and zoom state for refresh.
                     var refreshDefaultCenter = _config.getMap().getCenter();
                     var refreshDefaultZoomLevel = _config.getMap().getZoom();
+                    var refreshDefaultLayerVisibilities = [];
+                    _.each(_config.getLayers(), function(layer) {
+                        refreshDefaultLayerVisibilities.push(layer.getVisibility());
+                    });
                     // Reset whole animator.
                     reset();
                     // Set the previous animation continuation state.
@@ -1244,6 +1260,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     // Set the previous animation center and zoom state.
                     _refreshDefaultCenter = refreshDefaultCenter;
                     _refreshDefaultZoomLevel = refreshDefaultZoomLevel;
+                    _refreshDefaultLayerVisibilities = refreshDefaultLayerVisibilities;
                     // Set the previous current time state.
                     _currentTime = currentTime;
                     // Initialize animation again with original options.
@@ -1320,6 +1337,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             _continueAnimationWhenLoadComplete = false;
             _refreshDefaultCenter = undefined;
             _refreshDefaultZoomLevel = undefined;
+            _refreshDefaultLayerVisibilities = undefined;
             _requestAnimationTime = undefined;
             _currentTime = undefined;
             _legendResize = undefined;
