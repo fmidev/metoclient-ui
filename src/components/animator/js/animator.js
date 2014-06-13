@@ -135,6 +135,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // when new legends are created. By using this member variable,
         // multiple functions are not set if legends are created multiple times.
         var _legendResize;
+        // Pending legend layers wait beginning of layer load before legend may be updated.
+        var _pendingLegendLayers = [];
 
         // Keeps track of the layers that are loading data.
         // Then, progress bar can be shown accordingly.
@@ -170,6 +172,18 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         //--------------------------------------------
 
         _events.animationloadstarted = function(event) {
+            if (event && event.object) {
+                // Check if the given layer is part of the pending legend layers.
+                var index = _pendingLegendLayers.indexOf(event.object);
+                if (-1 !== index) {
+                    // Remove layer from the array.
+                    _pendingLegendLayers.splice(index, 1);
+                    if (event && event.object && event.object.getLegendInfo && event.object.getLegendInfo().length && event.object.getVisibility && event.object.getVisibility()) {
+                        // Update legends because visible layer was waiting for the load to start to get legend information.
+                        setLegend();
+                    }
+                }
+            }
             // If _requestAnimationTime has any value, it means that animation is going on.
             if (undefined !== _requestAnimationTime) {
                 // Continue animation when tiles have been loaded because animation
@@ -705,11 +719,9 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         }
 
         /**
-         * Set legends corresponding to the given layers.
-         *
-         * @param {[]} Array of layers for legends.
+         * Set legends corresponding to the configuration layers.
          */
-        function setLegend(layers) {
+        function setLegend() {
             if (_options.legendDivId) {
                 var i;
                 var j;
@@ -717,6 +729,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 var legendInfo;
                 var infoObject;
                 var legendView;
+                var layers = _config.getLayers();
 
                 var legend = jQuery("#" + _options.legendDivId);
                 // Make sure element is empty before appending possible new content.
@@ -833,17 +846,22 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             // Depending on the configuration, loading may be started when animation layer
             // is added to the map. Then, loading is started asynchronously.
             if (layers && _options.legendDivId) {
-                var legendEventHandler = function(event) {
+                var legendCheckEventHandler = function(event) {
                     // Notice, setLegend function also updates slider controller if
-                    // width is changed. This needs to be done synchronously when layer
-                    // visibility changes to be sure that proper controller exists and
-                    // can provide target elements for triggered events.
-                    setLegend(layers);
+                    // width is changed. This needs to be done synchronously when layer visibility
+                    // changes and before layer finishes content loading to be sure that proper controller
+                    // exists and can provide target elements for triggered events.
+                    if (event && event.object && event.object.getLegendInfo && !event.object.getLegendInfo().length && event.object.getVisibility && event.object.getVisibility() && !_.contains(_pendingLegendLayers, event.object)) {
+                        _pendingLegendLayers.push(event.object);
+
+                    } else {
+                        setLegend();
+                    }
                 };
                 var events = {
-                    visibilitychanged : legendEventHandler,
-                    added : legendEventHandler,
-                    removed : legendEventHandler
+                    visibilitychanged : legendCheckEventHandler,
+                    added : setLegend,
+                    removed : setLegend
                 };
                 for (var i = 0; i < layers.length; ++i) {
                     var layer = layers[i];
@@ -1076,7 +1094,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                         setTimeout(function() {
                             // Set legend synchronously before creating controller below.
                             // Then, controller can be created with proper width.
-                            setLegend(layers);
+                            setLegend();
                             // Notice, slider controller needs to be created before
                             // animation layers trigger events. Then, layer event callbacks
                             // have always target elements in controller. Controller is
@@ -1341,6 +1359,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             _requestAnimationTime = undefined;
             _currentTime = undefined;
             _legendResize = undefined;
+            _pendingLegendLayers = [];
 
             // Reset the DOM structure.
             resetStructure();
