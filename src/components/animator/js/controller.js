@@ -732,9 +732,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Set drag handlers.
             _slider.drag(dragMove, startDragMove, finalizeDragMove, _me, _me, _me);
 
-            // Reset initial time for label.
-            resetSliderLabelText();
-
             // Handle mouse wheel over the slider.
             jQuery([_sliderBg.node, _sliderLabel.node]).mousewheel(handleMouseScroll);
 
@@ -752,6 +749,8 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                     moveSliderTo(getDefaultSliderOffsetX());
                 }
                 _slider.show();
+                // Reset initial time for label.
+                resetSliderLabelText();
             }, 0);
         })();
 
