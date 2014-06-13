@@ -296,11 +296,12 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
             } else {
                 try {
-                    // Use options and configuration object to set map and layers.
-                    setMapAndLayers();
-
-                    // Create slider. Notice, this will set itself according to the options.
+                    // Create slider before layers.
+                    // Then, layer event callbacks have always target elements.
                     createController(errors, function() {
+                        // Use options and configuration object to set map and layers.
+                        setMapAndLayers();
+
                         // Handle callback after asynchronous initialization.
                         handleCallback(options.callback, errors);
                     });
@@ -878,13 +879,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         /**
          * Set animation legend event listener for animation layers.
          *
-         * @param {[]} Array of layers for legends.
+         * @param {[]} Array of layers for legends. May be {undefined} or {null}.
          */
         function setAnimationLegendEventListener(layers) {
             // Notice, legends are available only after animation layer load is started.
             // Depending on the configuration, loading may be started when animation layer
             // is added to the map. Then, loading is started asynchronously.
-            if (_options.legendDivId) {
+            if (layers && _options.legendDivId) {
                 var legendTimeout;
                 var legendEventHandler = function(event) {
                     // Use small timeout to make sure legends are not set too close to each other
@@ -1131,23 +1132,36 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                                 // Controller needs to be created asynchronously.
                                 // Otherwise, its width may not be properly set.
                                 setTimeout(function() {
-                                    _animationController = createCtrl(ctrls, timeModel, timeController);
+                                    try {
+                                        _animationController = createCtrl(ctrls, timeModel, timeController);
 
-                                    // Bind to listen for width changes in element to update
-                                    // controller if necessary. Width is defined as relative
-                                    // in CSS but height is static.
-                                    var width = ctrls.width();
-                                    // Notice, the window resize listener has already been set during animator construction.
-                                    // Use debounce to limit frequency of component redraw operations.
-                                    _animationControllerResize = createDebounce(function() {
-                                        var currentWidth = jQuery(ctrlSelector).width();
-                                        if (currentWidth !== width) {
-                                            width = currentWidth;
-                                            // Simply replace old with a new controller.
-                                            _animationController.remove();
-                                            _animationController = createCtrl(ctrls, timeModel, timeController);
+                                        // Bind to listen for width changes in element to update
+                                        // controller if necessary. Width is defined as relative
+                                        // in CSS but height is static.
+                                        var width = ctrls.width();
+                                        // Notice, the window resize listener has already been set during animator construction.
+                                        // Use debounce to limit frequency of component redraw operations.
+                                        _animationControllerResize = createDebounce(function() {
+                                            var currentWidth = jQuery(ctrlSelector).width();
+                                            if (currentWidth !== width) {
+                                                width = currentWidth;
+                                                // Simply replace old with a new controller.
+                                                _animationController.remove();
+                                                _animationController = createCtrl(ctrls, timeModel, timeController);
+                                            }
+                                        });
+
+                                    } catch(e) {
+                                        var errorStr = "ERROR: ConfigInitCallback: setTimeout: " + e.toString();
+                                        errors.push(errorStr);
+                                        if ("undefined" !== typeof console && console) {
+                                            console.error(errorStr);
                                         }
-                                    });
+
+                                    } finally {
+                                        // Inform that operation is complete.
+                                        cb();
+                                    }
                                 }, 0);
                             }
                         }
@@ -1159,8 +1173,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     if ("undefined" !== typeof console && console) {
                         console.error(errorStr);
                     }
-
-                } finally {
                     // Inform that operation is complete.
                     cb();
                 }
