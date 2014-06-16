@@ -16,10 +16,10 @@ fi.fmi.metoclient.ui.animator.Config = {
             allOverlays : true,
             projection : 'EPSG:3067',
             units : "m",
-            resolutions : [2048, 1024, 512, 256],
+            resolutions : [1024, 512, 256],
             maxExtent : [-4537345.568, 3840856.936, 2889342.313, 8254755.58],
             restrictedExtent : [-118331.366408356, 6335621.16701424, 875567.731906565, 7907751.53726352],
-            center : [400000, 7150000]
+            center : [395000, 7100000]
         }]
     },
 
@@ -30,11 +30,10 @@ fi.fmi.metoclient.ui.animator.Config = {
             url : "http://wms.fmi.fi/fmi-apikey/insert-your-apikey-here/geoserver/gwc/service/wmts",
             format : "image/png",
             layer : "KAP:Europe_basic_EurefFIN",
+            buffer : 1,
             style : "",
             matrixSet : "ETRS-TM35FIN",
             matrixIds : [{
-                identifier : "ETRS-TM35FIN:2"
-            }, {
                 identifier : "ETRS-TM35FIN:3"
             }, {
                 identifier : "ETRS-TM35FIN:4"
@@ -57,8 +56,6 @@ fi.fmi.metoclient.ui.animator.Config = {
             maxExtent : [-118331.366408356, 6335621.16701424, 875567.731906565, 7907751.53726352],
             matrixSet : "ETRS-TM35FIN-FINLAND",
             matrixIds : [{
-                identifier : "ETRS-TM35FIN-FINLAND:2"
-            }, {
                 identifier : "ETRS-TM35FIN-FINLAND:3"
             }, {
                 identifier : "ETRS-TM35FIN-FINLAND:4"
@@ -74,13 +71,13 @@ fi.fmi.metoclient.ui.animator.Config = {
                     isForecast : true
                 }],
                 autoLoad : true,
-                maxAsyncLoadCount : 4,
+                maxAsyncLoadCount : 8,
                 name : "Precipitation"
             }
         }]
     }],
 
-    defaultZoomLevel : 1,
+    defaultZoomLevel : 0,
     animationRefreshInterval : 15 * 60 * 1000,
     animationFrameRate : 500,
     animationResolutionTime : 15 * 60 * 1000,
