@@ -58,7 +58,7 @@ fi.fmi.metoclient.ui.animator.Utils = (function() {
         if (!Function.prototype.bind) {
             Function.prototype.bind = function(oThis) {
                 if ("function" !== typeof this) {
-                    // closest thing possible to the ECMAScript 5 internal IsCallable function
+                    // Closest thing possible to the ECMAScript 5 internal IsCallable function.
                     throw "Function.prototype.bind - what is trying to be bound is not callable";
                 }
 
