@@ -61,7 +61,7 @@ fi.fmi.metoclient.ui.animator.Utils = (function() {
         if (!Function.prototype.bind) {
             Function.prototype.bind = function(oThis) {
                 if ("function" !== typeof this) {
-                    // closest thing possible to the ECMAScript 5 internal IsCallable function
+                    // Closest thing possible to the ECMAScript 5 internal IsCallable function.
                     throw "Function.prototype.bind - what is trying to be bound is not callable";
                 }
 
@@ -3125,9 +3125,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Set drag handlers.
             _slider.drag(dragMove, startDragMove, finalizeDragMove, _me, _me, _me);
 
-            // Reset initial time for label.
-            resetSliderLabelText();
-
             // Handle mouse wheel over the slider.
             jQuery([_sliderBg.node, _sliderLabel.node]).mousewheel(handleMouseScroll);
 
@@ -3145,6 +3142,8 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                     moveSliderTo(getDefaultSliderOffsetX());
                 }
                 _slider.show();
+                // Reset initial time for label.
+                resetSliderLabelText();
             }, 0);
         })();
 
@@ -3356,6 +3355,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // animator reinitialization when animator is refreshing its content.
         var _refreshDefaultZoomLevel;
         var _refreshDefaultCenter;
+        var _refreshDefaultLayerVisibilities;
 
         // Animation listeners are added here during registration.
         var _animationEventsListeners = [];
@@ -3364,6 +3364,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // when new legends are created. By using this member variable,
         // multiple functions are not set if legends are created multiple times.
         var _legendResize;
+        // Pending legend layers wait beginning of layer load before legend may be updated.
+        var _pendingLegendLayers = [];
 
         // Keeps track of the layers that are loading data.
         // Then, progress bar can be shown accordingly.
@@ -3399,6 +3401,18 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         //--------------------------------------------
 
         _events.animationloadstarted = function(event) {
+            if (event && event.object) {
+                // Check if the given layer is part of the pending legend layers.
+                var index = _pendingLegendLayers.indexOf(event.object);
+                if (-1 !== index) {
+                    // Remove layer from the array.
+                    _pendingLegendLayers.splice(index, 1);
+                    if (event && event.object && event.object.getLegendInfo && event.object.getLegendInfo().length && event.object.getVisibility && event.object.getVisibility()) {
+                        // Update legends because visible layer was waiting for the load to start to get legend information.
+                        setLegend();
+                    }
+                }
+            }
             // If _requestAnimationTime has any value, it means that animation is going on.
             if (undefined !== _requestAnimationTime) {
                 // Continue animation when tiles have been loaded because animation
@@ -3464,15 +3478,17 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // Set and handle window events in this single place.
         //---------------------------------------------------
 
-        jQuery(window).resize(function(e) {
-            // Use the function wrappers if they have been set.
+        // Use debounce to limit frequency of component redraw operations.
+        jQuery(window).resize(_.debounce(function(e) {
             if (_legendResize) {
                 _legendResize();
             }
             if (_animationControllerResize) {
                 _animationControllerResize();
             }
-        });
+        }, DEBOUNCE_TIME, {
+            maxWait : DEBOUNCE_MAX_TIME
+        }));
 
         // Private functions.
         //-------------------
@@ -3501,71 +3517,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 }, 0);
             }
         };
-
-        /**
-         * Callback for configuration {init} function call.
-         *
-         * Uses asynchronous function before handling callback.
-         *
-         * See more details from {init} function for {options} and {errors} parameters.
-         *
-         * @param {Object} options Options for animator initialization.
-         * @param {Array} errors Array that contains possible errors that occurred during the flow.
-         */
-        function configInitCallback(options, errors) {
-            // Create structure only if initialization was a total success.
-            if (errors && errors.length) {
-                // Inform that animation structure is not created at all.
-                // Just highlight this by showing text in a console.
-                // Callback itself passes the errors.
-                if ("undefined" !== typeof console && console) {
-                    console.error("ERROR: Animator config init errors. Animation is not created!");
-                }
-                // Handle callback after asynchronous initialization.
-                handleCallback(options.callback, errors);
-
-            } else {
-                try {
-                    // Use options and configuration object to set map and layers.
-                    setMapAndLayers();
-
-                    // Create slider. Notice, this will set itself according to the options.
-                    createController(errors, function() {
-                        // Handle callback after asynchronous initialization.
-                        handleCallback(options.callback, errors);
-                    });
-
-                } catch(e) {
-                    var errorStr = "ERROR: ConfigInitCallback: " + e.toString();
-                    errors.push(errorStr);
-                    if ("undefined" !== typeof console && console) {
-                        console.error(errorStr);
-                    }
-                    handleCallback(options.callback, errors);
-                }
-            }
-        }
-
-        // Utils functions.
-        //-----------------
-
-        /**
-         * Create debounce function from the given function.
-         *
-         * @param {Function} f Function for debounce.
-         *                     May be {undefined} or {null}.
-         * @return {Function} Debounce function.
-         *                    May be {undefined} if {f} is not a function.
-         */
-        function createDebounce(f) {
-            var debounce;
-            if (_.isFunction(f)) {
-                debounce = _.debounce(f, DEBOUNCE_TIME, {
-                    maxWait : DEBOUNCE_MAX_TIME
-                });
-            }
-            return debounce;
-        }
 
         // Functions that handle events.
         //------------------------------
@@ -3965,13 +3916,15 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
             // Define new resize function because new slider is initialized.
             // Member variable is used to avoid multiple resizes if slider is recreated.
-            // Use debounce to limit frequency of component redraw operations.
-            _legendResize = createDebounce(function() {
-                // Change handle position on window resize.
-                resetValue();
-                reflowContent();
-                sizeScrollbar();
-            });
+            _legendResize = function() {
+                // Do not try to resize if legend elements do not exist.
+                if (!jQuery("#" + _options.legendDivId).hasClass("animatorLegendNoLegend")) {
+                    // Change handle position on window resize.
+                    resetValue();
+                    reflowContent();
+                    sizeScrollbar();
+                }
+            };
 
             // Init scrollbar size.
             // Safari wants a timeout.
@@ -3995,22 +3948,22 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         }
 
         /**
-         * Set legends corresponding to the given layers.
-         *
-         * @param {String} legendDivId Identifier for legend container.
-         * @param {[]} Array of layers for legends.
+         * Set legends corresponding to the configuration layers.
          */
-        function setLegend(legendDivId, layers) {
-            if (legendDivId) {
+        function setLegend() {
+            if (_options.legendDivId) {
                 var i;
                 var j;
                 var layer;
                 var legendInfo;
                 var infoObject;
                 var legendView;
-                var legend = jQuery("#" + legendDivId);
+                var layers = _config.getLayers();
+
+                var legend = jQuery("#" + _options.legendDivId);
                 // Make sure element is empty before appending possible new content.
                 legend.empty();
+
                 // Check if there are any legends configured.
                 var legendCount = 0;
                 for ( i = 0; i < layers.length; ++i) {
@@ -4028,6 +3981,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                         }
                     }
                 }
+
                 if (!legendCount) {
                     // There is no legend available.
                     // Set the corresponding classes for animation and legend elements.
@@ -4103,35 +4057,40 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 // Legends div is not available. So, use the whole area for animation.
                 jQuery("#" + _options.animationDivId).addClass("animatorAnimationNoLegend");
             }
+
+            // Also make sure that slider controller is updated properly.
+            // This is required to update controller when legend is hidden or shown.
+            if (_animationControllerResize) {
+                _animationControllerResize();
+            }
         }
 
         /**
          * Set animation legend event listener for animation layers.
          *
-         * @param {[]} Array of layers for legends.
+         * @param {[]} Array of layers for legends. May be {undefined} or {null}.
          */
         function setAnimationLegendEventListener(layers) {
             // Notice, legends are available only after animation layer load is started.
             // Depending on the configuration, loading may be started when animation layer
             // is added to the map. Then, loading is started asynchronously.
-            if (_options.legendDivId) {
-                var legendTimeout;
-                var legendEventHandler = function(event) {
-                    // Use small timeout to make sure legends are not set too close to each other
-                    // if multiple actions of same kind are started in a group.
-                    if (undefined === legendTimeout) {
-                        legendTimeout = setTimeout(function() {
-                            setLegend(_options.legendDivId, layers);
-                            _resetClearTimeouts.splice(_resetClearTimeouts.indexOf(legendTimeout), 1);
-                            legendTimeout = undefined;
-                        }, 100);
-                        _resetClearTimeouts.push(legendTimeout);
+            if (layers && _options.legendDivId) {
+                var legendCheckEventHandler = function(event) {
+                    // Notice, setLegend function also updates slider controller if
+                    // width is changed. This needs to be done synchronously when layer visibility
+                    // changes and before layer finishes content loading to be sure that proper controller
+                    // exists and can provide target elements for triggered events.
+                    if (event && event.object && event.object.getLegendInfo && !event.object.getLegendInfo().length && event.object.getVisibility && event.object.getVisibility() && !_.contains(_pendingLegendLayers, event.object)) {
+                        _pendingLegendLayers.push(event.object);
+
+                    } else {
+                        setLegend();
                     }
                 };
                 var events = {
-                    visibilitychanged : legendEventHandler,
-                    added : legendEventHandler,
-                    removed : legendEventHandler
+                    visibilitychanged : legendCheckEventHandler,
+                    added : setLegend,
+                    removed : setLegend
                 };
                 for (var i = 0; i < layers.length; ++i) {
                     var layer = layers[i];
@@ -4176,60 +4135,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         }
 
         /**
-         * Set given layers into the map.
-         * Also, register layers and controller to listen events.
-         *
-         * @param {OpenLayers.Map} map Map that will contain the given layers.
-         * @param [{OpenLayers.Layer}] layers Array of layers that will be added to the map.
-         */
-        function setLayers(map, layers) {
-            for (var i = 0; i < layers.length; ++i) {
-                var layer = layers[i];
-                if (layer.registerController) {
-                    // Layer has the required function.
-                    // Register layer to listen animation related controller events.
-                    layer.registerController(MyController.events);
-                }
-                if (layer.events) {
-                    // Register to listen animation events.
-                    layer.events.on(_events);
-                }
-                // Add layer to map.
-                // Notice, this also starts the animation if
-                // autoload and autostart have been defined for configuration.
-                map.addLayer(layer);
-            }
-        }
-
-        /**
-         * Set layers into the map.
-         */
-        function setMapAndLayers() {
-            if (_options.mapDivId) {
-                var map = _config.getMap();
-                if (map) {
-                    // Render map to its position.
-                    map.render(_options.mapDivId);
-                    var layers = _config.getLayers();
-                    if (layers) {
-                        setAnimationLegendEventListener(layers);
-                        setLayers(map, layers);
-                    }
-                    // Zoom the map after layers have been inserted.
-                    // Map center refresh value is used if it is available.
-                    var mapCenter = _refreshDefaultCenter || map.getCenter();
-                    if (!mapCenter) {
-                        // Map may not have center available even if it has been defined in config.
-                        // Then, calculate center from the maximum extent to make sure map can be shown.
-                        mapCenter = map.getMaxExtent().getCenterLonLat();
-                    }
-                    map.setCenter(mapCenter, undefined === _refreshDefaultZoomLevel ? _config.getDefaultZoomLevel() : _refreshDefaultZoomLevel);
-                    setupSwitcher(map, _options.layerSwitcherDivId, _options.maximizeSwitcher);
-                }
-            }
-        }
-
-        /**
          * Remove controller from DOM.
          */
         function resetCtrl() {
@@ -4263,125 +4168,218 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
         /**
          * Create time controller and set it into the UI according to the options that have been set during init.
-         *
-         * Asynchronous function calls {cb} when whole creation operation is complete.
-         *
-         * @param {Array} errors Array that contains possible error objects.
-         *                       May not be {undefined} or {null}.
-         * @param {Function} cb Callback function that is called when creation is complete.
-         *                      May not be {undefined} or {null}.
          */
-        function createController(errors, cb) {
-            // Because parts of the function need to be asynchronous,
-            // make the whole function to be asynchronous.
-            // Then, error and success cases can be handled consistently.
-            setTimeout(function() {
-                try {
-                    if (!_options || !_options.controllerDivId || !_options.playAndPauseDivId) {
-                        errors.push("ERROR: Options or properties missing for controller!");
+        function createController() {
+            if (!_options || !_options.controllerDivId || !_options.playAndPauseDivId) {
+                throw "ERROR: Options or properties missing for controller!";
 
-                    } else {
-                        // Do not create controller if animation has not defined any time period for frames.
-                        // If no period is given, then only show currently given layers.
-                        if (getBeginDate() !== undefined && getEndDate() !== undefined) {
-                            var ctrlSelector = "#" + _options.controllerDivId;
-                            var ctrls = jQuery(ctrlSelector);
-                            if (ctrls.length) {
-                                var currentTime = (new Date()).getTime();
-                                var startTime = getBeginDate().getTime();
-                                var endTime = getEndDate().getTime();
-                                // Forecast start time.
-                                var fctStart = getForecastBeginDate().getTime();
-                                // If end time is less than forecast time, then forecast is not used and value is left undefined.
-                                if (endTime < fctStart) {
-                                    fctStart = undefined;
-                                }
-                                var timePeriodListeners = [];
-                                var timeSelectionListeners = [];
-                                var fctStartTimeListeners = [];
-                                var tickIntervalListeners = [];
-
-                                // Model is used by animation controller to setup slider according to the animation settings.
-                                var timeModel = {
-                                    getStartTime : function() {
-                                        return startTime;
-                                    },
-                                    getEndTime : function() {
-                                        return endTime;
-                                    },
-                                    getResolution : function() {
-                                        return getResolution();
-                                    },
-                                    getForecastStartTime : function() {
-                                        return fctStart;
-                                    },
-                                    addTimePeriodChangeListener : function(l) {
-                                        timePeriodListeners.push(l);
-                                    },
-                                    addTimeSelectionChangeListener : function(l) {
-                                        timeSelectionListeners.push(l);
-                                    },
-                                    addAnimationEventsListener : function(l) {
-                                        _animationEventsListeners.push(l);
-                                    },
-                                    addForecastStartTimeChangeListener : function(l) {
-                                        fctStartTimeListeners.push(l);
-                                    },
-                                    addTickIntervalChangeListener : function(l) {
-                                        tickIntervalListeners.push(l);
-                                    }
-                                };
-
-                                // Animation controller may use these callback functions to inform
-                                // if animation state should be changed because of the actions in the slider.
-                                var timeController = {
-                                    proposeTimePeriodChange : function(startTime, endTime) {
-
-                                    },
-                                    proposeTimeSelectionChange : function(time) {
-                                        if ((time >= startTime) && (time <= endTime)) {
-                                            // Make sure steps are in given resolutions.
-                                            time = time - time % getResolution();
-                                            fireSelectedTimeChanged(time, timeSelectionListeners);
-                                        }
-                                    },
-                                    proposeNextFrame : function() {
-                                        fireNextFrame();
-                                    },
-                                    proposePreviousFrame : function() {
-                                        firePreviousFrame();
-                                    },
-                                    proposePause : function() {
-                                        firePause();
-                                    }
-                                };
-
-                                setPlayAndPause();
-
-                                // Controller needs to be created asynchronously.
-                                // Otherwise, its width may not be properly set.
-                                setTimeout(function() {
-                                    _animationController = createCtrl(ctrls, timeModel, timeController);
-
-                                    // Bind to listen for width changes in element to update
-                                    // controller if necessary. Width is defined as relative
-                                    // in CSS but height is static.
-                                    var width = ctrls.width();
-                                    // Notice, the window resize listener has already been set during animator construction.
-                                    // Use debounce to limit frequency of component redraw operations.
-                                    _animationControllerResize = createDebounce(function() {
-                                        var currentWidth = jQuery(ctrlSelector).width();
-                                        if (currentWidth !== width) {
-                                            width = currentWidth;
-                                            // Simply replace old with a new controller.
-                                            _animationController.remove();
-                                            _animationController = createCtrl(ctrls, timeModel, timeController);
-                                        }
-                                    });
-                                }, 0);
-                            }
+            } else {
+                // Do not create controller if animation has not defined any time period for frames.
+                // If no period is given, then only show currently given layers.
+                if (getBeginDate() !== undefined && getEndDate() !== undefined) {
+                    var ctrlSelector = "#" + _options.controllerDivId;
+                    var ctrls = jQuery(ctrlSelector);
+                    if (ctrls.length) {
+                        var currentTime = (new Date()).getTime();
+                        var startTime = getBeginDate().getTime();
+                        var endTime = getEndDate().getTime();
+                        // Forecast start time.
+                        var fctStart = getForecastBeginDate().getTime();
+                        // If end time is less than forecast time, then forecast is not used and value is left undefined.
+                        if (endTime < fctStart) {
+                            fctStart = undefined;
                         }
+                        var timePeriodListeners = [];
+                        var timeSelectionListeners = [];
+                        var fctStartTimeListeners = [];
+                        var tickIntervalListeners = [];
+
+                        // Model is used by animation controller to setup slider according to the animation settings.
+                        var timeModel = {
+                            getStartTime : function() {
+                                return startTime;
+                            },
+                            getEndTime : function() {
+                                return endTime;
+                            },
+                            getResolution : function() {
+                                return getResolution();
+                            },
+                            getForecastStartTime : function() {
+                                return fctStart;
+                            },
+                            addTimePeriodChangeListener : function(l) {
+                                timePeriodListeners.push(l);
+                            },
+                            addTimeSelectionChangeListener : function(l) {
+                                timeSelectionListeners.push(l);
+                            },
+                            addAnimationEventsListener : function(l) {
+                                _animationEventsListeners.push(l);
+                            },
+                            addForecastStartTimeChangeListener : function(l) {
+                                fctStartTimeListeners.push(l);
+                            },
+                            addTickIntervalChangeListener : function(l) {
+                                tickIntervalListeners.push(l);
+                            }
+                        };
+
+                        // Animation controller may use these callback functions to inform
+                        // if animation state should be changed because of the actions in the slider.
+                        var timeController = {
+                            proposeTimePeriodChange : function(startTime, endTime) {
+
+                            },
+                            proposeTimeSelectionChange : function(time) {
+                                if ((time >= startTime) && (time <= endTime)) {
+                                    // Make sure steps are in given resolutions.
+                                    time = time - time % getResolution();
+                                    fireSelectedTimeChanged(time, timeSelectionListeners);
+                                }
+                            },
+                            proposeNextFrame : function() {
+                                fireNextFrame();
+                            },
+                            proposePreviousFrame : function() {
+                                firePreviousFrame();
+                            },
+                            proposePause : function() {
+                                firePause();
+                            }
+                        };
+
+                        setPlayAndPause();
+
+                        _animationController = createCtrl(ctrls, timeModel, timeController);
+
+                        // Bind to listen for width changes in element to update
+                        // controller if necessary. Width is defined as relative
+                        // in CSS but height is static.
+                        var width = ctrls.width();
+                        // Notice, the window resize listener has already been set during animator construction.
+                        _animationControllerResize = function() {
+                            var currentWidth = jQuery(ctrlSelector).width();
+                            if (currentWidth !== width) {
+                                width = currentWidth;
+                                // Simply replace old with a new controller.
+                                _animationController.remove();
+                                _animationController = createCtrl(ctrls, timeModel, timeController);
+                            }
+                        };
                     }
+                }
+            }
+        }
+
+        /**
+         * Set given layers into the map.
+         * Also, register layers and controller to listen events.
+         *
+         * @param {OpenLayers.Map} map Map that will contain the given layers.
+         * @param [{OpenLayers.Layer}] layers Array of layers that will be added to the map.
+         */
+        function setLayers(map, layers) {
+            for (var i = 0; i < layers.length; ++i) {
+                var layer = layers[i];
+                if (_refreshDefaultLayerVisibilities && _refreshDefaultLayerVisibilities.length === layers.length) {
+                    // Keep layer visiblity state during animation refresh.
+                    var visibility = _refreshDefaultLayerVisibilities[i];
+                    if (visibility !== layer.getVisibility()) {
+                        layer.setVisibility(visibility);
+                    }
+                }
+                if (layer.registerController) {
+                    // Layer has the required function.
+                    // Register layer to listen animation related controller events.
+                    layer.registerController(MyController.events);
+                }
+                if (layer.events) {
+                    // Register to listen animation events.
+                    layer.events.on(_events);
+                }
+                // Add layer to map.
+                // Notice, this also starts the animation if
+                // autoload and autostart have been defined for configuration.
+                map.addLayer(layer);
+            }
+        }
+
+        /**
+         * Set layers into the map and create slider controller and legend.
+         */
+        function setComponents() {
+            if (_options.mapDivId) {
+                var map = _config.getMap();
+                if (map) {
+                    // Render map to its position.
+                    map.render(_options.mapDivId);
+                    var layers = _config.getLayers();
+                    if (layers) {
+                        setLayers(map, layers);
+                        // Create legend and controller asynchronously to make sure
+                        // proper information is used immediately after layers are
+                        // included into map above.
+                        setTimeout(function() {
+                            // Set legend synchronously before creating controller below.
+                            // Then, controller can be created with proper width.
+                            setLegend();
+                            // Notice, slider controller needs to be created before
+                            // animation layers trigger events. Then, layer event callbacks
+                            // have always target elements in controller. Controller is
+                            // created asynchronously here with zero timeout. Layers are
+                            // included into the map below synchronously but animation
+                            // triggers events asynchronously. Therefore, asynchronously
+                            // started synchronous operations for legend and controller
+                            // are finished before layer events are triggered.
+                            createController();
+                            // Set listeners to update legend according to animation layer events.
+                            setAnimationLegendEventListener(layers);
+                            setupSwitcher(map, _options.layerSwitcherDivId, _options.maximizeSwitcher);
+                        }, 0);
+                    }
+                    // Zoom the map after layers have been inserted.
+                    // Map center refresh value is used if it is available.
+                    var mapCenter = _refreshDefaultCenter || map.getCenter();
+                    if (!mapCenter) {
+                        // Map may not have center available even if it has been defined in config.
+                        // Then, calculate center from the maximum extent to make sure map can be shown.
+                        mapCenter = map.getMaxExtent().getCenterLonLat();
+                    }
+                    map.setCenter(mapCenter, undefined === _refreshDefaultZoomLevel ? _config.getDefaultZoomLevel() : _refreshDefaultZoomLevel);
+                }
+            }
+        }
+
+        /**
+         * Callback for configuration {init} function call.
+         *
+         * Uses asynchronous function before handling callback.
+         *
+         * See more details from {init} function for {options} and {errors} parameters.
+         *
+         * @param {Object} options Options for animator initialization.
+         * @param {Array} errors Array that contains possible errors that occurred during the flow.
+         */
+        function configInitCallback(options, errors) {
+            // Create structure only if initialization was a total success.
+            if (errors && errors.length) {
+                // Inform that animation structure is not created at all.
+                // Just highlight this by showing text in a console.
+                // Callback itself passes the errors.
+                if ("undefined" !== typeof console && console) {
+                    console.error("ERROR: Animator config init errors. Animation is not created!");
+                }
+                // Reset array after initialization because values are not needed after that.
+                _refreshDefaultLayerVisibilities = undefined;
+                // Handle callback after asynchronous initialization.
+                handleCallback(options.callback, errors);
+
+            } else {
+                try {
+                    // Use options and configuration object to set map, layers,
+                    // legend and slider controller.
+                    setComponents();
 
                 } catch(e) {
                     var errorStr = "ERROR: ConfigInitCallback: " + e.toString();
@@ -4391,10 +4389,11 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     }
 
                 } finally {
-                    // Inform that operation is complete.
-                    cb();
+                    // Reset array after initialization because values are not needed after that.
+                    _refreshDefaultLayerVisibilities = undefined;
+                    handleCallback(options.callback, errors);
                 }
-            }, 0);
+            }
         }
 
         /**
@@ -4497,6 +4496,10 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     // Temporarily hold information about animation center and zoom state for refresh.
                     var refreshDefaultCenter = _config.getMap().getCenter();
                     var refreshDefaultZoomLevel = _config.getMap().getZoom();
+                    var refreshDefaultLayerVisibilities = [];
+                    _.each(_config.getLayers(), function(layer) {
+                        refreshDefaultLayerVisibilities.push(layer.getVisibility());
+                    });
                     // Reset whole animator.
                     reset();
                     // Set the previous animation continuation state.
@@ -4504,6 +4507,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     // Set the previous animation center and zoom state.
                     _refreshDefaultCenter = refreshDefaultCenter;
                     _refreshDefaultZoomLevel = refreshDefaultZoomLevel;
+                    _refreshDefaultLayerVisibilities = refreshDefaultLayerVisibilities;
                     // Set the previous current time state.
                     _currentTime = currentTime;
                     // Initialize animation again with original options.
@@ -4580,9 +4584,11 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             _continueAnimationWhenLoadComplete = false;
             _refreshDefaultCenter = undefined;
             _refreshDefaultZoomLevel = undefined;
+            _refreshDefaultLayerVisibilities = undefined;
             _requestAnimationTime = undefined;
             _currentTime = undefined;
             _legendResize = undefined;
+            _pendingLegendLayers = [];
 
             // Reset the DOM structure.
             resetStructure();
