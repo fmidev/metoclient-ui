@@ -172,14 +172,7 @@
     position: absolute;
     height: 100%;
     width: 100%;
-    border-radius: 10px;
     overflow: hidden;
-    /*
-     * This fixes the overflow:hidden in Chrome.
-     * Otherwise map image would not have rounded corners in Chrome when map is moved or if border is not separately defined.
-     * Notice, if border itself is defined above, make sure that border corners are shown correctly if map is moved.
-     */
-    -webkit-mask-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAAAXNSR0IArs4c6QAAAApJREFUCNdjYAAAAAIAAeIhvDMAAAAASUVORK5CYII=");
 }
 
 /* OpenLayers style cascade replacements */
