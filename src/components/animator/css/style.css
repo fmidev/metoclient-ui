@@ -110,8 +110,8 @@
 
 .animatorLogo {
     position: absolute;
-    right: 5px;
-    bottom: 5px;
+    right: 27px;
+    bottom: 82px;
     width: 140px;
     height: 33px;
     background-image: url("img/fmi_logo.png");
@@ -123,15 +123,14 @@
 .animatorPlayAndPause {
     cursor: pointer;
     position: absolute;
-    left: 5px;
-    bottom: 5px;
-    width: 33px;
-    height: 33px;
+    left: 27px;
+    bottom: 27px;
+    width: 55px;
+    height: 55px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: left bottom;
     z-index: 9999999;
-    opacity: 0.85;
 }
 .animatorPlay {
     background-image: url("img/button-play.png");
@@ -160,7 +159,8 @@
      * greater than map. This way slider scale will be as wide as the map and the slider can overlap the container
      * border.
      */
-    width: 100%;
+    left: 27px;
+    right: 27px;
     height: 70px;
     overflow: hidden;
 }
@@ -170,8 +170,7 @@
  */
 .animatorMap {
     position: absolute;
-    top: 0;
-    bottom: 70px;
+    height: 100%;
     width: 100%;
     border-radius: 10px;
     overflow: hidden;

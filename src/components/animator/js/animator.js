@@ -1220,7 +1220,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 // if options object provides animatorContainerDivId.
                 if (options.animatorContainerDivId) {
                     // Notice, this HTML structure is given in API comments in more readable format.
-                    var defaultStructure = jQuery('<div class="animator"><div class="animatorAnimation" id="animatorAnimationId"><div class="animatorMap" id="animatorMapId"><div class="animatorLogo" id="animatorLogoId"></div><div class="animatorPlayAndPause" id="animatorPlayAndPauseId"></div></div><div class="animatorController" id="animatorControllerId"></div><div class="animatorLayerSwitcher" id="animatorLayerSwitcherId"></div></div><div class="animatorLegend" id="animatorLegendId"></div></div>');
+                    var defaultStructure = jQuery('<div class="animator"><div class="animatorAnimation" id="animatorAnimationId"><div class="animatorMap" id="animatorMapId"></div><div class="animatorLogo" id="animatorLogoId"></div><div class="animatorPlayAndPause" id="animatorPlayAndPauseId"></div><div class="animatorController" id="animatorControllerId"></div><div class="animatorLayerSwitcher" id="animatorLayerSwitcherId"></div></div><div class="animatorLegend" id="animatorLegendId"></div></div>');
                     jQuery("#" + options.animatorContainerDivId).append(defaultStructure);
                     // Set animator IDs for options because container is given and default should be used.
                     // Notice, if options contain some of the values, they are overwritten here.
@@ -1441,12 +1441,12 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *            <div class="animatorAnimation" id="animatorAnimationId">
          *                <div class="animatorMap" id="animatorMapId">
          *                    <!-- Animator map here. -->
-         *                    <div class="animatorLogo" id="animatorLogoId">
-         *                        <!-- Animator logo here -->
-         *                    </div>
-         *                    <div class="animatorPlayAndPause" id="animatorPlayAndPauseId">
-         *                        <!-- Animator play and pause button here -->
-         *                    </div>
+         *                </div>
+         *                <div class="animatorLogo" id="animatorLogoId">
+         *                    <!-- Animator logo here -->
+         *                </div>
+         *                <div class="animatorPlayAndPause" id="animatorPlayAndPauseId">
+         *                    <!-- Animator play and pause button here -->
          *                </div>
          *                <div class="animatorController" id="animatorControllerId">
          *                    <!-- Animator controller here. -->
