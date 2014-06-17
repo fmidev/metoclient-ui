@@ -193,41 +193,35 @@
 }
 
 .olControlLayerSwitcher .layersDiv {
-    background: #585858; /* fallback for IE */
-    background: rgb(88, 88, 88);
+    background: #585858;
 }
 
 div.olControlZoom {
-    top: 15px;
-    left: 0;
+    top: 27px;
+    left: 27px;
     border-radius: 0;
     padding: 0;
 }
 div.olControlZoom a {
-    margin: 0;
-    margin-bottom: 5px;
-    color: rgb(231,166,78);
+    background: #63b9e9;
+    color: #ffffff;
     font-size: 24px;
-    height: 24px;
-    width: 24px;
-    background: #585858; /* fallback for IE - IE6 requires background shorthand */
-    background: rgba(88, 88, 88, 1);
+    padding: 8px;
+    margin: 0;
+    border-radius: 0;
+}
+.olControlZoomIn {
+    border-bottom-color: #50a9e3;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
 }
 div.olControlZoom a:hover {
-    background: #585858; /* fallback for IE */
-    background: rgba(88, 88, 88, 0.7);
+    background: #2486ce;
 }
 @media only screen and (max-width: 600px) {
     div.olControlZoom a:hover {
-        background: #585858; /* fallback for IE */
-        background: rgba(88, 88, 88, 0.5);
+        background: #2486ce;
     }
-}
-.olControlZoomIn {
-    border-radius: 0 4px 4px 0;
-}
-.olControlZoomOut {
-    border-radius: 0 4px 4px 0;
 }
 
 /* Animator legend styles. */
