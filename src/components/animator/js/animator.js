@@ -410,14 +410,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 var playCtrl = jQuery("#" + _options.playAndPauseDivId);
                 if (playCtrl.length) {
                     // Switch the background image between pause and play.
-                    var currentImage = playCtrl.css("background-image");
+                    playCtrl.removeClass("animatorPlay");
+                    playCtrl.removeClass("animatorPause");
                     if (_requestAnimationTime !== undefined) {
-                        currentImage = currentImage.replace("play.png", "pause.png");
-                        playCtrl.css("background-image", currentImage);
+                        playCtrl.addClass("animatorPause");
 
                     } else {
-                        currentImage = currentImage.replace("pause.png", "play.png");
-                        playCtrl.css("background-image", currentImage);
+                        playCtrl.addClass("animatorPlay");
                     }
                 }
             }

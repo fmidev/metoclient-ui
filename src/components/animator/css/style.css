@@ -127,12 +127,23 @@
     bottom: 5px;
     width: 33px;
     height: 33px;
-    background-image: url("img/play.png");
     background-size: contain;
     background-repeat: no-repeat;
     background-position: left bottom;
     z-index: 9999999;
     opacity: 0.85;
+}
+.animatorPlay {
+    background-image: url("img/button-play.png");
+}
+.animatorPlay:hover {
+    background-image: url("img/button-play-hover.png");
+}
+.animatorPause {
+    background-image: url("img/button-pause.png");
+}
+.animatorPause:hover {
+    background-image: url("img/button-pause-hover.png");
 }
 
 /**
