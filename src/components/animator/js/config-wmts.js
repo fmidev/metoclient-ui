@@ -2,6 +2,13 @@
 
 "use strict";
 
+// You may set OpenLayers localization if needed.
+// Then, make sure proper JavaScript language files are also included
+// into your HTML file from OpenLayers Lang-folder.
+// For example:
+// OpenLayers.Lang.setCode('fi');
+// OpenLayers.Lang.setCode('sv');
+
 var fi = fi || {};
 fi.fmi = fi.fmi || {};
 fi.fmi.metoclient = fi.fmi.metoclient || {};
