@@ -1076,12 +1076,34 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         }
 
         /**
+         * Check if zoom level is minimum or maximum and change controller visiblity accordingly.
+         */
+        function zoomEndListener() {
+            var map = _config.getMap();
+            var currentZoomLevel = map.getZoom();
+            var minZoom = map.getMinZoom();
+            var maxZoom = minZoom + map.getNumZoomLevels() - 1;
+            jQuery(".olControlZoomOut").removeClass("animatorControlZoomDisable");
+            jQuery(".olControlZoomIn").removeClass("animatorControlZoomDisable");
+            if (currentZoomLevel <= minZoom) {
+                jQuery(".olControlZoomOut").addClass("animatorControlZoomDisable");
+            }
+            if (currentZoomLevel >= maxZoom) {
+                jQuery(".olControlZoomIn").addClass("animatorControlZoomDisable");
+            }
+        }
+
+        /**
          * Set layers into the map and create slider controller and legend.
          */
         function setComponents() {
             if (_options.mapDivId) {
                 var map = _config.getMap();
                 if (map) {
+                    // Register listener for maximum and minimum zoom levels.
+                    map.events.on({
+                        zoomend : zoomEndListener
+                    });
                     // Render map to its position.
                     map.render(_options.mapDivId);
                     var layers = _config.getLayers();

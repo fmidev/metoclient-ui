@@ -133,6 +133,8 @@
 
 /* Animator custom style cascade replacements for OpenLayers. */
 
+/** Layer switcher. */
+
 .animatorLayerSwitcher {
     position: absolute;
     top: 15px;
@@ -177,11 +179,16 @@
     padding: 10px 4px 8px 4px;
 }
 
+/** Zoom control. */
+
+.animatorControlZoomDisable {
+    opacity: 0.25;
+}
+
 /* OpenLayers style cascade replacements. */
 
-/**
- * Layer switcher.
- */
+/** Layer switcher. */
+
 .olControlLayerSwitcher {
     color: rgb(231, 166, 78);
 }
@@ -189,6 +196,8 @@
 .olControlLayerSwitcher .layersDiv {
     background: #585858;
 }
+
+/** Zoom control. */
 
 div.olControlZoom {
     top: 27px;
