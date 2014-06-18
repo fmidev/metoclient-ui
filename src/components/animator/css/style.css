@@ -131,6 +131,93 @@
     overflow: hidden;
 }
 
+/* Animator custom style cascade replacements for OpenLayers. */
+
+.animatorLayerSwitcher {
+    position: absolute;
+    top: 15px;
+    /* Opens inside of the map to the left in the right side of the wrapping container. */
+    right: 0;
+    /* See, .olControlLayerSwitcher */
+    width: 20em;
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: smaller;
+    color: rgb(231, 166, 78);
+}
+.animatorLayerSwitcher .layersDiv {
+    padding: 5px 10px 5px 10px;
+    background: rgb(88, 88, 88);
+    border-radius: 5px 0 0 5px;
+}
+.animatorLayerSwitcher .layersDiv .baseLbl, .animatorLayerSwitcher .layersDiv .dataLbl {
+    margin-top: 3px;
+    margin-left: 3px;
+    margin-bottom: 3px;
+}
+
+.animatorLayerlayerSwitcher .layersDiv .baseLayersDiv, .animatorLayerSwitcher .layersDiv .dataLayersDiv {
+    padding-left: 10px;
+}
+
+.animatorLayerSwitcher .maximizeDiv {
+    cursor: pointer;
+    background: rgb(88, 88, 88);
+    right: 0;
+    border-radius: 5px 0 0 5px;
+    /* Center the image element with some padding. */
+    padding: 10px 4px 8px 4px;
+}
+.animatorLayerSwitcher .minimizeDiv {
+    cursor: pointer;
+    top: 0;
+    right: 0;
+    border-radius: 5px 0 0 5px;
+    /* Center the image element with some padding. */
+    padding: 10px 4px 8px 4px;
+}
+
+/* OpenLayers style cascade replacements. */
+
+/**
+ * Layer switcher.
+ */
+.olControlLayerSwitcher {
+    color: rgb(231, 166, 78);
+}
+
+.olControlLayerSwitcher .layersDiv {
+    background: #585858;
+}
+
+div.olControlZoom {
+    top: 27px;
+    left: 27px;
+    border-radius: 0;
+    padding: 0;
+}
+div.olControlZoom a {
+    background: #63b9e9;
+    color: #ffffff;
+    font-size: 24px;
+    padding: 8px;
+    margin: 0;
+    border-radius: 0;
+}
+.olControlZoomIn {
+    border-bottom-color: #50a9e3;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+}
+div.olControlZoom a:hover {
+    background: #2486ce;
+}
+@media only screen and (max-width: 600px) {
+    div.olControlZoom a:hover {
+        background: #2486ce;
+    }
+}
+
 /* Animator legend styles. */
 
 /**
@@ -232,91 +319,4 @@
     margin: -8px auto 0;
     position: relative;
     top: 50%;
-}
-
-/* Animator custom style cascade replacements for OpenLayers. */
-
-.animatorLayerSwitcher {
-    position: absolute;
-    top: 15px;
-    /* Opens inside of the map to the left in the right side of the wrapping container. */
-    right: 0;
-    /* See, .olControlLayerSwitcher */
-    width: 20em;
-    font-family: sans-serif;
-    font-weight: bold;
-    font-size: smaller;
-    color: rgb(231, 166, 78);
-}
-.animatorLayerSwitcher .layersDiv {
-    padding: 5px 10px 5px 10px;
-    background: rgb(88, 88, 88);
-    border-radius: 5px 0 0 5px;
-}
-.animatorLayerSwitcher .layersDiv .baseLbl, .animatorLayerSwitcher .layersDiv .dataLbl {
-    margin-top: 3px;
-    margin-left: 3px;
-    margin-bottom: 3px;
-}
-
-.animatorLayerlayerSwitcher .layersDiv .baseLayersDiv, .animatorLayerSwitcher .layersDiv .dataLayersDiv {
-    padding-left: 10px;
-}
-
-.animatorLayerSwitcher .maximizeDiv {
-    cursor: pointer;
-    background: rgb(88, 88, 88);
-    right: 0;
-    border-radius: 5px 0 0 5px;
-    /* Center the image element with some padding. */
-    padding: 10px 4px 8px 4px;
-}
-.animatorLayerSwitcher .minimizeDiv {
-    cursor: pointer;
-    top: 0;
-    right: 0;
-    border-radius: 5px 0 0 5px;
-    /* Center the image element with some padding. */
-    padding: 10px 4px 8px 4px;
-}
-
-/* OpenLayers style cascade replacements. */
-
-/**
- * Layer switcher.
- */
-.olControlLayerSwitcher {
-    color: rgb(231, 166, 78);
-}
-
-.olControlLayerSwitcher .layersDiv {
-    background: #585858;
-}
-
-div.olControlZoom {
-    top: 27px;
-    left: 27px;
-    border-radius: 0;
-    padding: 0;
-}
-div.olControlZoom a {
-    background: #63b9e9;
-    color: #ffffff;
-    font-size: 24px;
-    padding: 8px;
-    margin: 0;
-    border-radius: 0;
-}
-.olControlZoomIn {
-    border-bottom-color: #50a9e3;
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-}
-div.olControlZoom a:hover {
-    background: #2486ce;
-}
-@media only screen and (max-width: 600px) {
-    div.olControlZoom a:hover {
-        background: #2486ce;
-    }
 }
