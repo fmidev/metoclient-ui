@@ -181,8 +181,9 @@
 
 /** Zoom control. */
 
-.animatorControlZoomDisable {
-    opacity: 0.25;
+div.olControlZoom .animatorControlZoomDisable, div.olControlZoom .animatorControlZoomDisable:hover {
+    background: #d7edf9;
+    cursor: default;
 }
 
 /* OpenLayers style cascade replacements. */
@@ -224,6 +225,9 @@ div.olControlZoom a:hover {
 @media only screen and (max-width: 600px) {
     div.olControlZoom a:hover {
         background: #2486ce;
+    }
+    div.olControlZoom .animatorControlZoomDisable, div.olControlZoom .animatorControlZoomDisable:hover {
+        background: #d7edf9;
     }
 }
 
