@@ -83,17 +83,32 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         //------------------------------------------------
 
         /**
-         * This is required to make sure slider is not hidden when it is in the side.
-         * This happends if it is outside of the paper. Therefore, use padding that
-         * takes this into account.
+         * Make sure controller slider is not out of bounds when it is in the left side of the controller.
+         * Therefore, use padding that takes this into account.
          *
          * @return {Integer} Scale padding.
          */
-        function getScalePadding() {
+        function getScalePaddingLeft() {
             // Notice, exact value can be calculated by _sliderConfig.width - _sliderConfig.sliderTipDx.
             // But it may be better to use constant. Then, for example UI CSS design may be easier to do if
             // values are constants.
-            return 50;
+            // Notice, this is greater than the right padding because CSS defines that Play button is
+            // located directly to the left side of the visible controller. Therefore, continue the padding
+            // under the button and until the left side of the controller.
+            return 82;
+        }
+
+        /**
+         * Make sure controller slider is not out of bounds when it is in the right side of the controller.
+         * Therefore, use padding that takes this into account.
+         *
+         * @return {Integer} Scale padding.
+         */
+        function getScalePaddingRight() {
+            // Notice, exact value can be calculated by _sliderConfig.width - _sliderConfig.sliderTipDx.
+            // But it may be better to use constant. Then, for example UI CSS design may be easier to do if
+            // values are constants.
+            return 27;
         }
 
         /**
@@ -107,7 +122,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          * @return {Integer} Scale area offset relative to the window.
          */
         function getScaleAreaOffsetX() {
-            return getScaleContainerOffsetX() + getScalePadding();
+            return getScaleContainerOffsetX() + getScalePaddingLeft();
         }
 
         /**
@@ -181,7 +196,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          * @return X relative to the parent, not necessary a window.
          */
         function getScaleAreaX() {
-            return _scaleContainer.getBBox().x + getScalePadding();
+            return _scaleContainer.getBBox().x + getScalePaddingLeft();
         }
 
         /**
@@ -192,7 +207,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         function getScaleAreaWidth() {
-            return Math.floor(_scaleConfig.width - 2 * getScalePadding());
+            return Math.floor(_scaleConfig.width - getScalePaddingLeft() - getScalePaddingRight());
         }
 
         function getScaleAreaHeight() {
@@ -425,9 +440,9 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             var obsWidth = getObsWidth();
             var fctWidth = getFctWidth();
             var bgWidth = obsWidth + fctWidth;
-            _background.attr("x", _scaleConfig.x + getScalePadding()).attr("width", bgWidth);
-            _obsBackground.attr("x", _scaleConfig.x + getScalePadding()).attr("width", obsWidth);
-            _fctBackground.attr("x", _scaleConfig.x + getScalePadding() + obsWidth).attr("width", fctWidth);
+            _background.attr("x", _scaleConfig.x + getScalePaddingLeft()).attr("width", bgWidth);
+            _obsBackground.attr("x", _scaleConfig.x + getScalePaddingLeft()).attr("width", obsWidth);
+            _fctBackground.attr("x", _scaleConfig.x + getScalePaddingLeft() + obsWidth).attr("width", fctWidth);
         }
 
         /**
@@ -633,13 +648,21 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _paper = createCanvas(element, width, height);
 
             // Initialization configurations.
+            _sliderConfig = {
+                height : 27,
+                width : 54,
+                bgColor : "#2486ce",
+                strokeBgColor : "white",
+                strokeWidth : 0
+            };
+
             _scaleConfig = {
                 // Corner radius.
                 radius : 0,
                 x : 0,
                 y : 0,
                 width : width,
-                height : height - 35,
+                height : height - _sliderConfig.height,
                 bgColor : Raphael.rgb(88, 88, 88),
                 cellReadyColor : Raphael.rgb(148, 191, 119),
                 cellErrorColor : Raphael.rgb(154, 37, 0),
@@ -652,13 +675,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Then, background color is shown a little bit in behind.
             _scaleConfig.progressCellHeight = _scaleConfig.height - _scaleConfig.bgHeight - 2;
 
-            _sliderConfig = {
-                height : 30,
-                width : 65,
-                bgColor : "#2486ce",
-                strokeBgColor : "white",
-                strokeWidth : 0
-            };
             // Notice, that polygon is drawn by using path. See, _sliderBg variable.
             // Notice, the polygon path height is 7 and tip height is 3. Therefore, use corresponding ration here.
             _sliderConfig.sliderTipHeight = _sliderConfig.height * (3 / 7);
@@ -688,25 +704,25 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _scaleContainer.attr('opacity', 0);
 
             // Background behind obs and fct.
-            _background = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getObsWidth() + getFctWidth(), _scaleConfig.height);
+            _background = _paper.rect(_scaleConfig.x + getScalePaddingLeft(), _scaleConfig.y, getObsWidth() + getFctWidth(), _scaleConfig.height);
             _background.attr('fill', _scaleConfig.bgColor);
             _background.attr('stroke-width', 0);
 
-            _obsBackground = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getObsWidth(), _scaleConfig.bgHeight);
+            _obsBackground = _paper.rect(_scaleConfig.x + getScalePaddingLeft(), _scaleConfig.y, getObsWidth(), _scaleConfig.bgHeight);
             _obsBackground.attr('fill', _scaleConfig.obsBgColor);
             _obsBackground.attr('stroke-width', 0);
 
-            _fctBackground = _paper.rect(_scaleConfig.x + getScalePadding() + getObsWidth(), _scaleConfig.y, getFctWidth(), _scaleConfig.bgHeight);
+            _fctBackground = _paper.rect(_scaleConfig.x + getScalePaddingLeft() + getObsWidth(), _scaleConfig.y, getFctWidth(), _scaleConfig.bgHeight);
             _fctBackground.attr('fill', _scaleConfig.fctBgColor);
             _fctBackground.attr('stroke-width', 0);
 
-            _leftHotSpot = _paper.rect(_scaleConfig.x, _scaleConfig.y, getScalePadding(), _scaleConfig.height);
+            _leftHotSpot = _paper.rect(_scaleConfig.x, _scaleConfig.y, getScalePaddingLeft(), _scaleConfig.height);
             // Fill is required. Otherwise, click does not work.
             _leftHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
             _leftHotSpot.attr('stroke-width', 0);
             _leftHotSpot.click(previousFrame);
 
-            _rightHotSpot = _paper.rect(_scaleConfig.x + width, _scaleConfig.y, getScalePadding(), _scaleConfig.height);
+            _rightHotSpot = _paper.rect(_scaleConfig.x + width, _scaleConfig.y, getScalePaddingRight(), _scaleConfig.height);
             // Fill is required. Otherwise, click does not work.
             _rightHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
             _rightHotSpot.attr('stroke-width', 0);
@@ -727,7 +743,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _sliderBg.attr('stroke-width', _sliderConfig.strokeWidth);
             _sliderBg.transform("S" + _sliderConfig.scaleX + "," + _sliderConfig.scaleY + ",0,0T0," + _sliderConfig.y);
 
-            _sliderLabel = _paper.text(32, _sliderConfig.y + 26, "00:00");
+            _sliderLabel = _paper.text(27, _sliderConfig.y + 26, "00:00");
             _sliderLabel.attr({
                 "font-family" : _labelFontFamily,
                 "font-size" : _labelFontSize,

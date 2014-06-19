@@ -59,7 +59,6 @@
     left: 30%;
     width: 40%;
     /* Use component default height. */
-    z-index: 999999;
     /* Hide as default. */
     display: none;
 }
@@ -74,7 +73,6 @@
     background-size: contain;
     background-repeat: no-repeat;
     background-position: right bottom;
-    z-index: 9999999;
 }
 .animatorPlayAndPause {
     cursor: pointer;
@@ -86,7 +84,6 @@
     background-size: contain;
     background-repeat: no-repeat;
     background-position: left bottom;
-    z-index: 9999999;
 }
 .animatorPlay {
     background-image: url("img/button-play.png");
@@ -108,16 +105,9 @@
     position: absolute;
     cursor: pointer;
     bottom: 0;
-    /*
-     * Notice, controller slider moves outside of the scale area. The area outside scale is 50px in each side.
-     * Therefore, if map and controller width are set equal, the scale are is actually 2*50px less.
-     * If map and scale side should be in equal positions, controller left should be -50px and its width 2*50px
-     * greater than map. This way slider scale will be as wide as the map and the slider can overlap the container
-     * border.
-     */
-    left: 27px;
-    right: 27px;
-    height: 70px;
+    left: 0;
+    right: 0;
+    height: 82px;
     overflow: hidden;
 }
 
