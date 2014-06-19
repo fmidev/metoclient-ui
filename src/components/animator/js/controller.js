@@ -24,7 +24,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
 
     var createCanvas = Raphael;
     var _labelFontFamily = "Arial";
-    var _labelFontSize = 12;
+    var _labelFontSize = 14;
 
     function getTimeStr(date) {
         var hours = date.getHours();
@@ -515,7 +515,12 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                         _tickSet.push(tick);
                         jQuery(tick.node).mousewheel(handleMouseScroll);
                         if (newHour && i < cellCount) {
-                            var hourLabel = _paper.text(positionX + 2, getScaleAreaY() + 8, getTimeStr(date)).attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize).attr("fill", Raphael.getRGB("black"));
+                            var hourLabel = _paper.text(positionX + 2, getScaleAreaY() + 8, getTimeStr(date)).attr({
+                                "text-anchor" : "start",
+                                "font-family" : _labelFontFamily,
+                                "font-size" : _labelFontSize,
+                                "fill" : Raphael.getRGB("black")
+                            });
                             // Check if the hourlabel fits into the scale area.
                             var hourLabelNode = jQuery(hourLabel.node);
                             if (hourLabelNode.offset().left + hourLabelNode.width() <= getScaleAreaOffsetX() + getScaleAreaWidth()) {
@@ -630,7 +635,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Initialization configurations.
             _scaleConfig = {
                 // Corner radius.
-                radius : 5,
+                radius : 0,
                 x : 0,
                 y : 0,
                 width : width,
@@ -650,9 +655,9 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _sliderConfig = {
                 height : 30,
                 width : 65,
-                bgColor : Raphael.rgb(88, 88, 88),
-                strokeBgColor : Raphael.rgb(191, 191, 191),
-                strokeWidth : 1
+                bgColor : "#2486ce",
+                strokeBgColor : "white",
+                strokeWidth : 0
             };
             // Notice, that polygon is drawn by using path. See, _sliderBg variable.
             // Notice, the polygon path height is 7 and tip height is 3. Therefore, use corresponding ration here.
@@ -660,10 +665,10 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Polygon path width is 14. Scale to the width given here.
             _sliderConfig.scaleX = _sliderConfig.width / 14;
             _sliderConfig.scaleY = (_sliderConfig.height + _sliderConfig.sliderTipHeight) / 7;
-            // The tip x position is 4 in the polygon path. So, use that with the scale.
-            _sliderConfig.sliderTipDx = Math.floor(4 * _sliderConfig.scaleX);
-            // Make slider overlap the scale a little bit.
-            _sliderConfig.y = _scaleConfig.y + _scaleConfig.height - Math.floor(_sliderConfig.sliderTipHeight / 3);
+            // The tip x position is 7 in the polygon path. So, use that with the scale.
+            _sliderConfig.sliderTipDx = Math.floor(7 * _sliderConfig.scaleX);
+            // Make slider tip overlap the scale.
+            _sliderConfig.y = _scaleConfig.y + _scaleConfig.height - Math.floor(_sliderConfig.sliderTipHeight);
 
             // Scale initializations.
             //-----------------------
@@ -716,14 +721,18 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Collects all the slider elements.
             _slider = _paper.set();
 
-            _sliderBg = _paper.path("M0,2L0,7L14,7L14,2L6,2L4,0L2,2Z");
+            _sliderBg = _paper.path("M0,2L0,7L14,7L14,2L9,2L7,0L5,2Z");
             _sliderBg.attr('fill', _sliderConfig.bgColor);
             _sliderBg.attr('stroke', _sliderConfig.strokeBgColor);
             _sliderBg.attr('stroke-width', _sliderConfig.strokeWidth);
             _sliderBg.transform("S" + _sliderConfig.scaleX + "," + _sliderConfig.scaleY + ",0,0T0," + _sliderConfig.y);
 
             _sliderLabel = _paper.text(32, _sliderConfig.y + 26, "00:00");
-            _sliderLabel.attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize);
+            _sliderLabel.attr({
+                "font-family" : _labelFontFamily,
+                "font-size" : _labelFontSize,
+                "font-weight" : "bold"
+            });
             _sliderLabel.attr("fill", _sliderConfig.strokeBgColor).attr('stroke-width', 0);
 
             _slider.push(_sliderBg);
