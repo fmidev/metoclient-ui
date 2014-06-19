@@ -86,16 +86,18 @@
     background-position: left bottom;
 }
 .animatorPlay {
-    background-image: url("img/button-play.png");
+    background-image: url("img/play.png");
+    background-color: #63b9e9;
 }
 .animatorPlay:hover {
-    background-image: url("img/button-play-hover.png");
+    background-color: #2486ce;
 }
 .animatorPause {
-    background-image: url("img/button-pause.png");
+    background-image: url("img/pause.png");
+    background-color: #63b9e9;
 }
 .animatorPause:hover {
-    background-image: url("img/button-pause-hover.png");
+    background-color: #2486ce;
 }
 
 /**
