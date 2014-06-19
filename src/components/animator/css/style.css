@@ -137,46 +137,47 @@
 
 .animatorLayerSwitcher {
     position: absolute;
-    top: 15px;
+    top: 27px;
     /* Opens inside of the map to the left in the right side of the wrapping container. */
     right: 0;
-    /* See, .olControlLayerSwitcher */
-    width: 20em;
     font-family: sans-serif;
     font-weight: bold;
     font-size: smaller;
-    color: rgb(231, 166, 78);
+    color: #000000;
+    background: #ffffff;
+    min-height: 96px;
 }
 .animatorLayerSwitcher .layersDiv {
-    padding: 5px 10px 5px 10px;
-    background: rgb(88, 88, 88);
-    border-radius: 5px 0 0 5px;
+    padding: 15px 55px 15px 15px;
 }
-.animatorLayerSwitcher .layersDiv .baseLbl, .animatorLayerSwitcher .layersDiv .dataLbl {
-    margin-top: 3px;
-    margin-left: 3px;
-    margin-bottom: 3px;
-}
-
-.animatorLayerlayerSwitcher .layersDiv .baseLayersDiv, .animatorLayerSwitcher .layersDiv .dataLayersDiv {
-    padding-left: 10px;
-}
-
 .animatorLayerSwitcher .maximizeDiv {
     cursor: pointer;
-    background: rgb(88, 88, 88);
+    top: 0;
     right: 0;
-    border-radius: 5px 0 0 5px;
-    /* Center the image element with some padding. */
-    padding: 10px 4px 8px 4px;
+    bottom: 0;
+    width: 40px;
+    background: #63b9e9;
+}
+.animatorLayerSwitcher .maximizeDiv:hover {
+    background: #2486ce;
 }
 .animatorLayerSwitcher .minimizeDiv {
     cursor: pointer;
     top: 0;
     right: 0;
-    border-radius: 5px 0 0 5px;
-    /* Center the image element with some padding. */
-    padding: 10px 4px 8px 4px;
+    bottom: 0;
+    width: 40px;
+    background: #63b9e9;
+}
+.animatorLayerSwitcher .minimizeDiv:hover {
+    background: #2486ce;
+}
+.layersDiv .dataLbl {
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+.dataLayersDiv {
+    font-weight: normal;
 }
 
 /** Zoom control. */
@@ -187,16 +188,6 @@ div.olControlZoom .animatorControlZoomDisable, div.olControlZoom .animatorContro
 }
 
 /* OpenLayers style cascade replacements. */
-
-/** Layer switcher. */
-
-.olControlLayerSwitcher {
-    color: rgb(231, 166, 78);
-}
-
-.olControlLayerSwitcher .layersDiv {
-    background: #585858;
-}
 
 /** Zoom control. */
 
