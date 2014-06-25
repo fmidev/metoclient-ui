@@ -2417,7 +2417,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
 
     var createCanvas = Raphael;
     var _labelFontFamily = "Arial";
-    var _labelFontSize = 12;
+    var _labelFontSize = 14;
 
     function getTimeStr(date) {
         var hours = date.getHours();
@@ -2476,17 +2476,32 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         //------------------------------------------------
 
         /**
-         * This is required to make sure slider is not hidden when it is in the side.
-         * This happends if it is outside of the paper. Therefore, use padding that
-         * takes this into account.
+         * Make sure controller slider is not out of bounds when it is in the left side of the controller.
+         * Therefore, use padding that takes this into account.
          *
          * @return {Integer} Scale padding.
          */
-        function getScalePadding() {
+        function getScalePaddingLeft() {
             // Notice, exact value can be calculated by _sliderConfig.width - _sliderConfig.sliderTipDx.
             // But it may be better to use constant. Then, for example UI CSS design may be easier to do if
             // values are constants.
-            return 50;
+            // Notice, this is greater than the right padding because CSS defines that Play button is
+            // located directly to the left side of the visible controller. Therefore, continue the padding
+            // under the button and until the left side of the controller.
+            return 82;
+        }
+
+        /**
+         * Make sure controller slider is not out of bounds when it is in the right side of the controller.
+         * Therefore, use padding that takes this into account.
+         *
+         * @return {Integer} Scale padding.
+         */
+        function getScalePaddingRight() {
+            // Notice, exact value can be calculated by _sliderConfig.width - _sliderConfig.sliderTipDx.
+            // But it may be better to use constant. Then, for example UI CSS design may be easier to do if
+            // values are constants.
+            return 27;
         }
 
         /**
@@ -2500,7 +2515,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          * @return {Integer} Scale area offset relative to the window.
          */
         function getScaleAreaOffsetX() {
-            return getScaleContainerOffsetX() + getScalePadding();
+            return getScaleContainerOffsetX() + getScalePaddingLeft();
         }
 
         /**
@@ -2574,7 +2589,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          * @return X relative to the parent, not necessary a window.
          */
         function getScaleAreaX() {
-            return _scaleContainer.getBBox().x + getScalePadding();
+            return _scaleContainer.getBBox().x + getScalePaddingLeft();
         }
 
         /**
@@ -2585,7 +2600,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         function getScaleAreaWidth() {
-            return Math.floor(_scaleConfig.width - 2 * getScalePadding());
+            return Math.floor(_scaleConfig.width - getScalePaddingLeft() - getScalePaddingRight());
         }
 
         function getScaleAreaHeight() {
@@ -2783,20 +2798,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         function getObsWidth() {
-            var width = 0;
-            var forecastStartTime = getForecastStartTime();
-            var startTime = getStartTime();
-            var endTime = getEndTime();
-            if (undefined !== forecastStartTime) {
-                if (_model && (endTime - startTime)) {
-                    // Forecast start time is given and width can be calculated.
-                    width = Math.floor(getScaleAreaWidth() * (forecastStartTime - startTime) / (endTime - startTime));
-                }
-
-            } else {
-                // Observation takes the whole scale width if forecast is not used.
-                width = getScaleAreaWidth();
-            }
+            var width = _model ? getScaleAreaWidth() - getFctWidth() : 0;
             if (width < 0) {
                 width = 0;
             }
@@ -2804,7 +2806,19 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         function getFctWidth() {
-            var width = _model ? getScaleAreaWidth() - getObsWidth() : 0;
+            var width = 0;
+            var forecastStartTime = getForecastStartTime();
+            var startTime = getStartTime();
+            var endTime = getEndTime();
+            if (undefined !== forecastStartTime) {
+                if (_model && (endTime - startTime)) {
+                    // Forecast start time is given and width can be calculated.
+                    // Notice, progress cell on the left side of the time describes the time content.
+                    // Therefore, use resolution to get the proper width for the whole forecast area.
+                    var resolution = getResolution() || 0;
+                    width = Math.floor(getScaleAreaWidth() * (endTime - (forecastStartTime - resolution)) / (endTime - startTime));
+                }
+            }
             if (width < 0) {
                 width = 0;
             }
@@ -2818,9 +2832,9 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             var obsWidth = getObsWidth();
             var fctWidth = getFctWidth();
             var bgWidth = obsWidth + fctWidth;
-            _background.attr("x", _scaleConfig.x + getScalePadding()).attr("width", bgWidth);
-            _obsBackground.attr("x", _scaleConfig.x + getScalePadding()).attr("width", obsWidth);
-            _fctBackground.attr("x", _scaleConfig.x + getScalePadding() + obsWidth).attr("width", fctWidth);
+            _background.attr("x", _scaleConfig.x + getScalePaddingLeft()).attr("width", bgWidth);
+            _obsBackground.attr("x", _scaleConfig.x + getScalePaddingLeft()).attr("width", obsWidth);
+            _fctBackground.attr("x", _scaleConfig.x + getScalePaddingLeft() + obsWidth).attr("width", fctWidth);
         }
 
         /**
@@ -2847,7 +2861,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                 var begin = getStartTime();
                 var end = getEndTime();
                 var beginX = getScaleAreaX();
-                var beginY = getScaleAreaY() + getScaleAreaHeight() - _scaleConfig.progressCellHeight - 1;
+                var beginY = getScaleAreaY() + getScaleAreaHeight() - _scaleConfig.progressCellHeight;
                 var cellCount = Math.floor((end - begin) / resolution);
                 var cellWidth = getScaleAreaWidth() / cellCount;
                 for (var i = 0; i < cellCount; ++i) {
@@ -2898,7 +2912,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                     var newHour = date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0;
                     if (newHour || i === 0 || i === cellCount) {
                         // Exact hour, major tick.
-                        tickEndY = getScaleAreaHeight() / 4;
+                        tickEndY = tickEndY - _scaleConfig.progressCellHeight;
                     }
 
                     if (tickEndY) {
@@ -2908,10 +2922,14 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                         _tickSet.push(tick);
                         jQuery(tick.node).mousewheel(handleMouseScroll);
                         if (newHour && i < cellCount) {
-                            var hourLabel = _paper.text(positionX + 2, getScaleAreaY() + 8, getTimeStr(date)).attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize).attr("fill", Raphael.getRGB("black"));
+                            var hourLabel = _paper.text(positionX, getScaleAreaY() + getScaleAreaHeight() / 3, getTimeStr(date)).attr({
+                                "font-family" : _labelFontFamily,
+                                "font-size" : _labelFontSize,
+                                "fill" : Raphael.getRGB("black")
+                            });
                             // Check if the hourlabel fits into the scale area.
                             var hourLabelNode = jQuery(hourLabel.node);
-                            if (hourLabelNode.offset().left + hourLabelNode.width() <= getScaleAreaOffsetX() + getScaleAreaWidth()) {
+                            if (hourLabelNode.offset().left >= getScaleAreaOffsetX() && hourLabelNode.offset().left + hourLabelNode.width() <= getScaleAreaOffsetX() + getScaleAreaWidth()) {
                                 // Label fits. So, let it be in the UI.
                                 _tickSet.push(hourLabel);
                                 jQuery(hourLabel.node).mousewheel(handleMouseScroll);
@@ -3021,42 +3039,41 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _paper = createCanvas(element, width, height);
 
             // Initialization configurations.
+            _sliderConfig = {
+                height : 27,
+                width : 54,
+                bgColor : "#2486ce",
+                strokeBgColor : "white",
+                strokeWidth : 0
+            };
+
             _scaleConfig = {
                 // Corner radius.
-                radius : 5,
+                radius : 0,
                 x : 0,
                 y : 0,
                 width : width,
-                height : height - 35,
-                bgColor : Raphael.rgb(88, 88, 88),
-                cellReadyColor : Raphael.rgb(148, 191, 119),
-                cellErrorColor : Raphael.rgb(154, 37, 0),
-                cellLoadingColor : Raphael.rgb(148, 191, 191),
-                obsBgColor : Raphael.rgb(178, 216, 234),
-                fctBgColor : Raphael.rgb(231, 166, 78)
+                height : height - _sliderConfig.height,
+                bgHeight : height - _sliderConfig.height - 12,
+                progressCellHeight : 12,
+                bgColor : "#384a52",
+                cellReadyColor : "#71be3c",
+                cellErrorColor : "#ff0000",
+                cellLoadingColor : "#658694",
+                obsBgColor : "#b3d9e9",
+                fctBgColor : "#98cbe0"
             };
-            _scaleConfig.bgHeight = Math.floor(2 * _scaleConfig.height / 3);
-            // Make progress cell height a little bit smaller than remaining area.
-            // Then, background color is shown a little bit in behind.
-            _scaleConfig.progressCellHeight = _scaleConfig.height - _scaleConfig.bgHeight - 2;
 
-            _sliderConfig = {
-                height : 30,
-                width : 65,
-                bgColor : Raphael.rgb(88, 88, 88),
-                strokeBgColor : Raphael.rgb(191, 191, 191),
-                strokeWidth : 1
-            };
             // Notice, that polygon is drawn by using path. See, _sliderBg variable.
             // Notice, the polygon path height is 7 and tip height is 3. Therefore, use corresponding ration here.
             _sliderConfig.sliderTipHeight = _sliderConfig.height * (3 / 7);
             // Polygon path width is 14. Scale to the width given here.
             _sliderConfig.scaleX = _sliderConfig.width / 14;
             _sliderConfig.scaleY = (_sliderConfig.height + _sliderConfig.sliderTipHeight) / 7;
-            // The tip x position is 4 in the polygon path. So, use that with the scale.
-            _sliderConfig.sliderTipDx = Math.floor(4 * _sliderConfig.scaleX);
-            // Make slider overlap the scale a little bit.
-            _sliderConfig.y = _scaleConfig.y + _scaleConfig.height - Math.floor(_sliderConfig.sliderTipHeight / 3);
+            // The tip x position is 7 in the polygon path. So, use that with the scale.
+            _sliderConfig.sliderTipDx = Math.floor(7 * _sliderConfig.scaleX);
+            // Make slider tip overlap the scale.
+            _sliderConfig.y = _scaleConfig.y + _scaleConfig.height - Math.floor(_sliderConfig.sliderTipHeight);
 
             // Scale initializations.
             //-----------------------
@@ -3076,25 +3093,25 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _scaleContainer.attr('opacity', 0);
 
             // Background behind obs and fct.
-            _background = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getObsWidth() + getFctWidth(), _scaleConfig.height);
+            _background = _paper.rect(_scaleConfig.x + getScalePaddingLeft(), _scaleConfig.y, getObsWidth() + getFctWidth(), _scaleConfig.height);
             _background.attr('fill', _scaleConfig.bgColor);
             _background.attr('stroke-width', 0);
 
-            _obsBackground = _paper.rect(_scaleConfig.x + getScalePadding(), _scaleConfig.y, getObsWidth(), _scaleConfig.bgHeight);
+            _obsBackground = _paper.rect(_scaleConfig.x + getScalePaddingLeft(), _scaleConfig.y, getObsWidth(), _scaleConfig.bgHeight);
             _obsBackground.attr('fill', _scaleConfig.obsBgColor);
             _obsBackground.attr('stroke-width', 0);
 
-            _fctBackground = _paper.rect(_scaleConfig.x + getScalePadding() + getObsWidth(), _scaleConfig.y, getFctWidth(), _scaleConfig.bgHeight);
+            _fctBackground = _paper.rect(_scaleConfig.x + getScalePaddingLeft() + getObsWidth(), _scaleConfig.y, getFctWidth(), _scaleConfig.bgHeight);
             _fctBackground.attr('fill', _scaleConfig.fctBgColor);
             _fctBackground.attr('stroke-width', 0);
 
-            _leftHotSpot = _paper.rect(_scaleConfig.x, _scaleConfig.y, getScalePadding(), _scaleConfig.height);
+            _leftHotSpot = _paper.rect(_scaleConfig.x, _scaleConfig.y, getScalePaddingLeft(), _scaleConfig.height);
             // Fill is required. Otherwise, click does not work.
             _leftHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
             _leftHotSpot.attr('stroke-width', 0);
             _leftHotSpot.click(previousFrame);
 
-            _rightHotSpot = _paper.rect(_scaleConfig.x + width, _scaleConfig.y, getScalePadding(), _scaleConfig.height);
+            _rightHotSpot = _paper.rect(_scaleConfig.x + width, _scaleConfig.y, getScalePaddingRight(), _scaleConfig.height);
             // Fill is required. Otherwise, click does not work.
             _rightHotSpot.attr('fill', Raphael.rgb(0, 0, 0)).attr('opacity', 0);
             _rightHotSpot.attr('stroke-width', 0);
@@ -3109,14 +3126,18 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Collects all the slider elements.
             _slider = _paper.set();
 
-            _sliderBg = _paper.path("M0,2L0,7L14,7L14,2L6,2L4,0L2,2Z");
+            _sliderBg = _paper.path("M0,2L0,7L14,7L14,2L9,2L7,0L5,2Z");
             _sliderBg.attr('fill', _sliderConfig.bgColor);
             _sliderBg.attr('stroke', _sliderConfig.strokeBgColor);
             _sliderBg.attr('stroke-width', _sliderConfig.strokeWidth);
             _sliderBg.transform("S" + _sliderConfig.scaleX + "," + _sliderConfig.scaleY + ",0,0T0," + _sliderConfig.y);
 
-            _sliderLabel = _paper.text(32, _sliderConfig.y + 26, "00:00");
-            _sliderLabel.attr("text-anchor", "start").attr("font-family", _labelFontFamily).attr("font-size", _labelFontSize);
+            _sliderLabel = _paper.text(27, _sliderConfig.y + 26, "00:00");
+            _sliderLabel.attr({
+                "font-family" : _labelFontFamily,
+                "font-size" : _labelFontSize,
+                "font-weight" : "bold"
+            });
             _sliderLabel.attr("fill", _sliderConfig.strokeBgColor).attr('stroke-width', 0);
 
             _slider.push(_sliderBg);
@@ -3639,14 +3660,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 var playCtrl = jQuery("#" + _options.playAndPauseDivId);
                 if (playCtrl.length) {
                     // Switch the background image between pause and play.
-                    var currentImage = playCtrl.css("background-image");
+                    playCtrl.removeClass("animatorPlay");
+                    playCtrl.removeClass("animatorPause");
                     if (_requestAnimationTime !== undefined) {
-                        currentImage = currentImage.replace("play.png", "pause.png");
-                        playCtrl.css("background-image", currentImage);
+                        playCtrl.addClass("animatorPause");
 
                     } else {
-                        currentImage = currentImage.replace("pause.png", "play.png");
-                        playCtrl.css("background-image", currentImage);
+                        playCtrl.addClass("animatorPlay");
                     }
                 }
             }
@@ -4306,12 +4326,34 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         }
 
         /**
+         * Check if zoom level is minimum or maximum and change controller visiblity accordingly.
+         */
+        function zoomEndListener() {
+            var map = _config.getMap();
+            var currentZoomLevel = map.getZoom();
+            var minZoom = map.getMinZoom();
+            var maxZoom = minZoom + map.getNumZoomLevels() - 1;
+            jQuery(".olControlZoomOut").removeClass("animatorControlZoomDisable");
+            jQuery(".olControlZoomIn").removeClass("animatorControlZoomDisable");
+            if (currentZoomLevel <= minZoom) {
+                jQuery(".olControlZoomOut").addClass("animatorControlZoomDisable");
+            }
+            if (currentZoomLevel >= maxZoom) {
+                jQuery(".olControlZoomIn").addClass("animatorControlZoomDisable");
+            }
+        }
+
+        /**
          * Set layers into the map and create slider controller and legend.
          */
         function setComponents() {
             if (_options.mapDivId) {
                 var map = _config.getMap();
                 if (map) {
+                    // Register listener for maximum and minimum zoom levels.
+                    map.events.on({
+                        zoomend : zoomEndListener
+                    });
                     // Render map to its position.
                     map.render(_options.mapDivId);
                     var layers = _config.getLayers();
@@ -4450,7 +4492,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                 // if options object provides animatorContainerDivId.
                 if (options.animatorContainerDivId) {
                     // Notice, this HTML structure is given in API comments in more readable format.
-                    var defaultStructure = jQuery('<div class="animator"><div class="animatorAnimation" id="animatorAnimationId"><div class="animatorMap" id="animatorMapId"><div class="animatorLogo" id="animatorLogoId"></div><div class="animatorPlayAndPause" id="animatorPlayAndPauseId"></div></div><div class="animatorController" id="animatorControllerId"></div><div class="animatorLayerSwitcher" id="animatorLayerSwitcherId"></div></div><div class="animatorLegend" id="animatorLegendId"></div></div>');
+                    var defaultStructure = jQuery('<div class="animator"><div class="animatorAnimation" id="animatorAnimationId"><div class="animatorMap" id="animatorMapId"></div><div class="animatorLogo" id="animatorLogoId"></div><div class="animatorController" id="animatorControllerId"></div><div class="animatorPlayAndPause" id="animatorPlayAndPauseId"></div><div class="animatorLayerSwitcher" id="animatorLayerSwitcherId"></div></div><div class="animatorLegend" id="animatorLegendId"></div></div>');
                     jQuery("#" + options.animatorContainerDivId).append(defaultStructure);
                     // Set animator IDs for options because container is given and default should be used.
                     // Notice, if options contain some of the values, they are overwritten here.
@@ -4671,15 +4713,15 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *            <div class="animatorAnimation" id="animatorAnimationId">
          *                <div class="animatorMap" id="animatorMapId">
          *                    <!-- Animator map here. -->
-         *                    <div class="animatorLogo" id="animatorLogoId">
-         *                        <!-- Animator logo here -->
-         *                    </div>
-         *                    <div class="animatorPlayAndPause" id="animatorPlayAndPauseId">
-         *                        <!-- Animator play and pause button here -->
-         *                    </div>
+         *                </div>
+         *                <div class="animatorLogo" id="animatorLogoId">
+         *                    <!-- Animator logo here -->
          *                </div>
          *                <div class="animatorController" id="animatorControllerId">
          *                    <!-- Animator controller here. -->
+         *                </div>
+         *                <div class="animatorPlayAndPause" id="animatorPlayAndPauseId">
+         *                    <!-- Animator play and pause button here -->
          *                </div>
          *                <div class="animatorLayerSwitcher" id="animatorLayerSwitcherId">
          *                    <!-- Animator map layer ctrl is inserted here.
