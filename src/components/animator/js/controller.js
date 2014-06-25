@@ -405,20 +405,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         function getObsWidth() {
-            var width = 0;
-            var forecastStartTime = getForecastStartTime();
-            var startTime = getStartTime();
-            var endTime = getEndTime();
-            if (undefined !== forecastStartTime) {
-                if (_model && (endTime - startTime)) {
-                    // Forecast start time is given and width can be calculated.
-                    width = Math.floor(getScaleAreaWidth() * (forecastStartTime - startTime) / (endTime - startTime));
-                }
-
-            } else {
-                // Observation takes the whole scale width if forecast is not used.
-                width = getScaleAreaWidth();
-            }
+            var width = _model ? getScaleAreaWidth() - getFctWidth() : 0;
             if (width < 0) {
                 width = 0;
             }
@@ -426,7 +413,19 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         function getFctWidth() {
-            var width = _model ? getScaleAreaWidth() - getObsWidth() : 0;
+            var width = 0;
+            var forecastStartTime = getForecastStartTime();
+            var startTime = getStartTime();
+            var endTime = getEndTime();
+            if (undefined !== forecastStartTime) {
+                if (_model && (endTime - startTime)) {
+                    // Forecast start time is given and width can be calculated.
+                    // Notice, progress cell on the left side of the time describes the time content.
+                    // Therefore, use resolution to get the proper width for the whole forecast area.
+                    var resolution = getResolution() || 0;
+                    width = Math.floor(getScaleAreaWidth() * (endTime - (forecastStartTime - resolution)) / (endTime - startTime));
+                }
+            }
             if (width < 0) {
                 width = 0;
             }
