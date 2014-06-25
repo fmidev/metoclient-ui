@@ -469,7 +469,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                 var begin = getStartTime();
                 var end = getEndTime();
                 var beginX = getScaleAreaX();
-                var beginY = getScaleAreaY() + getScaleAreaHeight() - _scaleConfig.progressCellHeight - 1;
+                var beginY = getScaleAreaY() + getScaleAreaHeight() - _scaleConfig.progressCellHeight;
                 var cellCount = Math.floor((end - begin) / resolution);
                 var cellWidth = getScaleAreaWidth() / cellCount;
                 for (var i = 0; i < cellCount; ++i) {
@@ -520,7 +520,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                     var newHour = date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0;
                     if (newHour || i === 0 || i === cellCount) {
                         // Exact hour, major tick.
-                        tickEndY = getScaleAreaHeight() / 4;
+                        tickEndY = tickEndY - _scaleConfig.progressCellHeight;
                     }
 
                     if (tickEndY) {
@@ -530,15 +530,14 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                         _tickSet.push(tick);
                         jQuery(tick.node).mousewheel(handleMouseScroll);
                         if (newHour && i < cellCount) {
-                            var hourLabel = _paper.text(positionX + 2, getScaleAreaY() + 8, getTimeStr(date)).attr({
-                                "text-anchor" : "start",
+                            var hourLabel = _paper.text(positionX, getScaleAreaY() + getScaleAreaHeight() / 3, getTimeStr(date)).attr({
                                 "font-family" : _labelFontFamily,
                                 "font-size" : _labelFontSize,
                                 "fill" : Raphael.getRGB("black")
                             });
                             // Check if the hourlabel fits into the scale area.
                             var hourLabelNode = jQuery(hourLabel.node);
-                            if (hourLabelNode.offset().left + hourLabelNode.width() <= getScaleAreaOffsetX() + getScaleAreaWidth()) {
+                            if (hourLabelNode.offset().left >= getScaleAreaOffsetX() && hourLabelNode.offset().left + hourLabelNode.width() <= getScaleAreaOffsetX() + getScaleAreaWidth()) {
                                 // Label fits. So, let it be in the UI.
                                 _tickSet.push(hourLabel);
                                 jQuery(hourLabel.node).mousewheel(handleMouseScroll);
@@ -663,17 +662,15 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                 y : 0,
                 width : width,
                 height : height - _sliderConfig.height,
-                bgColor : Raphael.rgb(88, 88, 88),
-                cellReadyColor : Raphael.rgb(148, 191, 119),
-                cellErrorColor : Raphael.rgb(154, 37, 0),
-                cellLoadingColor : Raphael.rgb(148, 191, 191),
-                obsBgColor : Raphael.rgb(178, 216, 234),
-                fctBgColor : Raphael.rgb(231, 166, 78)
+                bgHeight : height - _sliderConfig.height - 12,
+                progressCellHeight : 12,
+                bgColor : "#384a52",
+                cellReadyColor : "#71be3c",
+                cellErrorColor : "#ff0000",
+                cellLoadingColor : "#658694",
+                obsBgColor : "#b3d9e9",
+                fctBgColor : "#98cbe0"
             };
-            _scaleConfig.bgHeight = Math.floor(2 * _scaleConfig.height / 3);
-            // Make progress cell height a little bit smaller than remaining area.
-            // Then, background color is shown a little bit in behind.
-            _scaleConfig.progressCellHeight = _scaleConfig.height - _scaleConfig.bgHeight - 2;
 
             // Notice, that polygon is drawn by using path. See, _sliderBg variable.
             // Notice, the polygon path height is 7 and tip height is 3. Therefore, use corresponding ration here.
