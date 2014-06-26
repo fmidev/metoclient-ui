@@ -527,6 +527,10 @@ fi.fmi.metoclient.ui.animator.Config = {
     // Notice, zero is a special value here. Then, time
     // is floored to the resolution time because future
     // data is not requested.
-    animationDeltaToEndTime : 2 * 60 * 60 * 1000
+    animationDeltaToEndTime : 2 * 60 * 60 * 1000,
+
+    // Localized text that is used if browser is not supported.
+    // Default value is used if not defined here or {undefined}, {null} or empty.
+    browserNotSupportedInfo : "Browser not supported. Update browser."
 
 };

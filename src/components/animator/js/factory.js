@@ -630,6 +630,13 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         /**
          * See API for function description.
          */
+        function getBrowserNotSupportedInfo() {
+            return _config ? _config.browserNotSupportedInfo : undefined;
+        }
+
+        /**
+         * See API for function description.
+         */
         function getMap() {
             // Create map if it has not been created yet.
             if (!_map && _config && _config.map && _config.map.className) {
@@ -1027,6 +1034,14 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          *                May not be {undefined}.
          */
         this.getForecastBeginDate = getForecastBeginDate;
+
+        /**
+         * Get browser not supported information text.
+         *
+         * @return {String} Browser not supported information text from configuration.
+         *                  May be {undefined} if not set in configuration.
+         */
+        this.getBrowserNotSupportedInfo = getBrowserNotSupportedInfo;
     };
 
     // Constructor function for new instantiation.

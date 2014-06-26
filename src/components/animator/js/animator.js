@@ -61,12 +61,12 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
     // Constant variables.
 
+    // Default text to inform if browser is not supported.
+    var DEFAULT_BROWSER_NOT_SUPPORTED_INFO = "Browser not supported. Update browser.";
     // Time for debounce function.
     var DEBOUNCE_TIME = 10;
     // Maximum time for debounce function.
     var DEBOUNCE_MAX_TIME = 100;
-
-    // Instance independent functions.
 
     /**
      * Controller object.
@@ -78,6 +78,16 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         // Use OpenLayers events as a controller and this singleton object as its container.
         events : new OpenLayers.Events(this)
     };
+
+    // Instance independent functions.
+
+    /**
+     * @return {Boolean} Browser is supported if {true}.
+     */
+    function isBrowserSupported() {
+        // Browser is supported if IE9+.
+        return document.addEventListener;
+    }
 
     /**
      * Deep clone callback function for lodash.
@@ -1237,6 +1247,16 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *                         May be {undefined} or {null} but then operation is ignored.
          */
         function createStructure(options) {
+            if (!isBrowserSupported()) {
+                var errorStr = _config.getBrowserNotSupportedInfo() || DEFAULT_BROWSER_NOT_SUPPORTED_INFO;
+                if (options) {
+                    var errorSelector = options.animatorContainerDivId || options.animationDivId;
+                    if (errorSelector) {
+                        jQuery("#" + errorSelector).append('<div class="errorInfo">' + errorStr + '</div>');
+                    }
+                }
+                throw errorStr;
+            }
             if (options) {
                 // Default animator element structure is used and appended into container
                 // if options object provides animatorContainerDivId.

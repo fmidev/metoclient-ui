@@ -20,6 +20,15 @@
 }
 
 /**
+ * Error information element in UI.
+ */
+.errorInfo {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+}
+
+/**
  * Animator map and animation controls are inserted into this container.
  */
 .animatorAnimation {
