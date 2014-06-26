@@ -89,6 +89,8 @@ fi.fmi.metoclient.ui.animator.Config = {
     animationFrameRate : 500,
     animationResolutionTime : 15 * 60 * 1000,
     animationDeltaToBeginTime : 12 * 15 * 60 * 1000,
-    animationDeltaToEndTime : 4 * 15 * 60 * 1000
+    animationDeltaToEndTime : 4 * 15 * 60 * 1000,
+
+    browserNotSupportedInfo : "Browser not supported. Update browser."
 
 };
