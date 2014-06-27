@@ -50,6 +50,7 @@ module.exports = function(grunt) {
                 files : {
                     // Animator
                     'dist/components/animator/js/animator.js' : ['src/components/animator/js/utils.js', 'src/components/animator/js/wmscapabilities.js', 'src/components/animator/js/wfscapabilities.js', 'src/components/animator/js/capabilities.js', 'src/components/animator/js/factory.js', 'src/components/animator/js/controller.js', 'src/components/animator/js/animator.js'],
+                    'dist/components/animator/js/controllerconfig.js' : ['src/components/animator/js/controllerconfig.js'],
                     'dist/components/animator/js/config.js' : ['src/components/animator/js/config.js'],
                     'dist/components/animator/js/config-wmts.js' : ['src/components/animator/js/config-wmts.js'],
                     // Graph
