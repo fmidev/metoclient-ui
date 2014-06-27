@@ -96,17 +96,17 @@
 }
 .animatorPlay {
     background-image: url("img/play.png");
-    background-color: #63b9e9;
+    background-color: #585858;
 }
 .animatorPlay:hover {
-    background-color: #2486ce;
+    background-color: #686868;
 }
 .animatorPause {
     background-image: url("img/pause.png");
-    background-color: #63b9e9;
+    background-color: #585858;
 }
 .animatorPause:hover {
-    background-color: #2486ce;
+    background-color: #686868;
 }
 
 /**
@@ -144,8 +144,8 @@
     font-family: sans-serif;
     font-weight: bold;
     font-size: smaller;
-    color: #000000;
-    background: #ffffff;
+    color: #d7b13e;
+    background: #585858;
     min-height: 96px;
 }
 .animatorLayerSwitcher .layersDiv {
@@ -157,10 +157,10 @@
     right: 0;
     bottom: 0;
     width: 40px;
-    background: #63b9e9;
+    background: #585858;
 }
 .animatorLayerSwitcher .maximizeDiv:hover {
-    background: #2486ce;
+    background: #686868;
 }
 .animatorLayerSwitcher .minimizeDiv {
     cursor: pointer;
@@ -168,10 +168,10 @@
     right: 0;
     bottom: 0;
     width: 40px;
-    background: #63b9e9;
+    background: #585858;
 }
 .animatorLayerSwitcher .minimizeDiv:hover {
-    background: #2486ce;
+    background: #686868;
 }
 .layersDiv .dataLbl {
     text-transform: uppercase;
@@ -184,7 +184,7 @@
 /** Zoom control. */
 
 div.olControlZoom .animatorControlZoomDisable, div.olControlZoom .animatorControlZoomDisable:hover {
-    background: #d7edf9;
+    background: #d5d5d5;
     cursor: default;
 }
 
@@ -199,27 +199,27 @@ div.olControlZoom {
     padding: 0;
 }
 div.olControlZoom a {
-    background: #63b9e9;
-    color: #ffffff;
+    background: #585858;
+    color: #d7b13e;
     font-size: 24px;
     padding: 8px;
     margin: 0;
     border-radius: 0;
 }
 .olControlZoomIn {
-    border-bottom-color: #50a9e3;
+    border-bottom-color: #797979;
     border-bottom-style: solid;
     border-bottom-width: 1px;
 }
 div.olControlZoom a:hover {
-    background: #2486ce;
+    background: #686868;
 }
 @media only screen and (max-width: 600px) {
     div.olControlZoom a:hover {
-        background: #2486ce;
+        background: #686868;
     }
     div.olControlZoom .animatorControlZoomDisable, div.olControlZoom .animatorControlZoomDisable:hover {
-        background: #d7edf9;
+        background: #d5d5d5;
     }
 }
 

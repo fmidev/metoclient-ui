@@ -25,11 +25,11 @@ fi.fmi.metoclient.ui.animator.ControllerConfig = {
         /**
          * Slider background color.
          */
-        bgColor : "#2486ce",
+        bgColor : "#585858",
         /**
          * Slider text color.
          */
-        textColor : "white"
+        textColor : "#d7b13e"
     },
 
     /**
@@ -39,29 +39,29 @@ fi.fmi.metoclient.ui.animator.ControllerConfig = {
         /**
          * Background color.
          */
-        bgColor : "#384a52",
+        bgColor : "#585858",
         /**
          * Cell shows ready color when content data
          * loading has completed.
          */
-        cellReadyColor : "#71be3c",
+        cellReadyColor : "#94bf77",
         /**
          * Cell shows error color if an error has occurred
          * during content data loading.
          */
-        cellErrorColor : "#ff0000",
+        cellErrorColor : "#9a2500",
         /**
          * Cell shows loading color while data is loading.
          */
-        cellLoadingColor : "#658694",
+        cellLoadingColor : "#94bfbf",
         /**
          * Time scale observation area background color.
          */
-        obsBgColor : "#b3d9e9",
+        obsBgColor : "#b2d8ea",
         /**
          * Time scale forecast area background color.
          */
-        fctBgColor : "#98cbe0"
+        fctBgColor : "#e7a64e"
     }
 
 };
