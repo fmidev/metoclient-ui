@@ -2409,7 +2409,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
 // "use strict";
 
 // Requires Raphael JS
-if ( typeof Raphael === "undefined" || !Raphael) {
+if ("undefined" === typeof Raphael || !Raphael) {
     throw "ERROR: Raphael JS is required for fi.fmi.metoclient.ui.animator.Controller!";
 }
 
@@ -2418,12 +2418,28 @@ if ("undefined" === typeof jQuery || !jQuery) {
     throw "ERROR: jQuery is required for fi.fmi.metoclient.ui.animator.Controller!";
 }
 
-//"Package" definitions
+// "Package" definitions
 var fi = fi || {};
 fi.fmi = fi.fmi || {};
 fi.fmi.metoclient = fi.fmi.metoclient || {};
 fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
 fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
+
+if ("undefined" === typeof fi.fmi.metoclient.ui.animator.ControllerConfig || !fi.fmi.metoclient.ui.animator.ControllerConfig) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.ControllerConfig is required for fi.fmi.metoclient.ui.animator.Controller!";
+}
+if (!fi.fmi.metoclient.ui.animator.ControllerConfig.sliderConfig || !fi.fmi.metoclient.ui.animator.ControllerConfig.sliderConfig.bgColor || !fi.fmi.metoclient.ui.animator.ControllerConfig.sliderConfig.textColor) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.ControllerConfig.sliderConfig and its properties are required for fi.fmi.metoclient.ui.animator.Controller!";
+}
+if (!fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig || !fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.bgColor) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig and its properties are required for fi.fmi.metoclient.ui.animator.Controller!";
+}
+if (!fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.cellReadyColor || !fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.cellErrorColor || !fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.cellLoadingColor) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig and its cell properties are required for fi.fmi.metoclient.ui.animator.Controller!";
+}
+if (!fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.obsBgColor || !fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.fctBgColor) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig and its background properties are required for fi.fmi.metoclient.ui.animator.Controller!";
+}
 
 /**
  * Controller povides time slider to control animations.
@@ -3057,8 +3073,8 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             _sliderConfig = {
                 height : 27,
                 width : 54,
-                bgColor : "#2486ce",
-                strokeBgColor : "white",
+                bgColor : fi.fmi.metoclient.ui.animator.ControllerConfig.sliderConfig.bgColor,
+                strokeBgColor : fi.fmi.metoclient.ui.animator.ControllerConfig.sliderConfig.textColor,
                 strokeWidth : 0
             };
 
@@ -3071,12 +3087,12 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                 height : height - _sliderConfig.height,
                 bgHeight : height - _sliderConfig.height - 12,
                 progressCellHeight : 12,
-                bgColor : "#384a52",
-                cellReadyColor : "#71be3c",
-                cellErrorColor : "#ff0000",
-                cellLoadingColor : "#658694",
-                obsBgColor : "#b3d9e9",
-                fctBgColor : "#98cbe0"
+                bgColor : fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.bgColor,
+                cellReadyColor : fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.cellReadyColor,
+                cellErrorColor : fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.cellErrorColor,
+                cellLoadingColor : fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.cellLoadingColor,
+                obsBgColor : fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.obsBgColor,
+                fctBgColor : fi.fmi.metoclient.ui.animator.ControllerConfig.scaleConfig.fctBgColor
             };
 
             // Notice, that polygon is drawn by using path. See, _sliderBg variable.
