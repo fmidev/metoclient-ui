@@ -258,8 +258,11 @@ fi.fmi.metoclient.ui.animator.Config = {
                 // Load automatically when layer is added to the map.
                 autoLoad : true,
                 // Flag to inform if legend may be requested for the layer.
-                // Notice, default is false. Notice, this value is inherited
-                // as a default value by period specific layers if they are defined.
+                // Notice, default is false. This property may also be used to define
+                // explicit legend URL string. Then, given URL string is used instead
+                // of creating legend URL from the layer information. Notice, either
+                // {boolean} or {string} value is inherited as default value by time
+                // period specific layers if they are defined.
                 hasLegend : true,
                 // Time period specific animation frames may be named.
                 // Then, the frame uses the name for the layer and
