@@ -319,8 +319,8 @@ fi.fmi.metoclient.ui.animator.Utils = (function() {
         var isSupported = window && document && document.addEventListener;
         // Firefox and Safari browsers are supported if Firefox 4+, Safari 5.1+.
         isSupported = isSupported && (window.HTMLCanvasElement ? true : false);
-        // Opera browser is supported if Opera 15+.
-        isSupported = isSupported && !(window.opera && parseFloat(window.opera.version()) < 15);
+        // Opera browser is supported if Opera 12.10+.
+        isSupported = isSupported && !(window.opera && window.opera.version && parseFloat(window.opera.version()) < 12.10);
         return isSupported;
     };
 
