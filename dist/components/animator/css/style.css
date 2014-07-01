@@ -205,6 +205,8 @@ div.olControlZoom a {
     padding: 8px;
     margin: 0;
     border-radius: 0;
+    opacity: 1;
+    filter: alpha(opacity=100);
 }
 .olControlZoomIn {
     border-bottom-color: #797979;
