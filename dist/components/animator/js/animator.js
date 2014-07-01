@@ -48,6 +48,9 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  */
 fi.fmi.metoclient.ui.animator.Utils = (function() {
 
+    // Default text to inform if browser is not supported.
+    var DEFAULT_BROWSER_NOT_SUPPORTED_INFO = "Browser not supported. Update browser.";
+
     /**
      * Function to provide {bind} if an older browser does not support it natively.
      *
@@ -306,6 +309,37 @@ fi.fmi.metoclient.ui.animator.Utils = (function() {
     };
 
     /**
+     * See API for function description.
+     */
+    var isBrowserSupported = function() {
+        // Browsers and their versions are checked here by using
+        // blacklist style. Therefore, browser and its version is supported
+        // as default if it is not explicitly checked here.
+        // IE browser is supported if IE9+.
+        var isSupported = window && document && document.addEventListener;
+        // Firefox and Safari browsers are supported if Firefox 4+, Safari 5.1+.
+        isSupported = isSupported && (window.HTMLCanvasElement ? true : false);
+        // Opera browser is supported if Opera 15+.
+        isSupported = isSupported && !(window.opera && parseFloat(window.opera.version()) < 15);
+        return isSupported;
+    };
+
+    /**
+     * See API for function description.
+     */
+    var checkBrowserSupport = function(infoClass, config) {
+        var isSupported = isBrowserSupported();
+        if (!isSupported && infoClass) {
+            var notSupportedText = ( config ? config.browserNotSupportedInfo : undefined ) || DEFAULT_BROWSER_NOT_SUPPORTED_INFO;
+            jQuery("." + infoClass).append('<div class="errorInfo">' + notSupportedText + '</div>');
+            if ("undefined" !== typeof console && console) {
+                console.error("ERROR: " + notSupportedText);
+            }
+        }
+        return isSupported;
+    };
+
+    /**
      * Return Utils API as an object.
      */
     return {
@@ -319,7 +353,26 @@ fi.fmi.metoclient.ui.animator.Utils = (function() {
          *                     May be {undefined} or {null}.
          * @return {Object} New Instance of the class with given arguments.
          */
-        createInstance : createInstance
+        createInstance : createInstance,
+
+        /**
+         * Check if browser in use is supported.
+         *
+         * @return {Boolean} Browser is supported if {true}.
+         */
+        isBrowserSupported : isBrowserSupported,
+
+        /**
+         * Browser not supported text is appended into {infoClass} element if browser in use is not supported.
+         *
+         * @param {String} infoClass HTML element class name that is used to show information
+         *                           if browser is not supported. May be {undefined} or {null}.
+         * @param {Object} config Animator configuration object that may contain localized
+         *                        browser not supported text. Default browser not supported
+         *                        text is used if {undefined}, {null} or empty.
+         * @return {Boolean} Browser is supported if {true}.
+         */
+        checkBrowserSupport : checkBrowserSupport
 
     };
 
@@ -1396,6 +1449,9 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
 
     // Private constants.
 
+    // Default text to inform if browser is not supported.
+    var DEFAULT_BROWSER_NOT_SUPPORTED_INFO = "Browser not supported. Update browser.";
+
     // If configuration uses auto for time value,
     // capabilities is used to get the proper time.
     var CAPABILITY_TIME_AUTO = "auto";
@@ -1989,7 +2045,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * See API for function description.
          */
         function getBrowserNotSupportedInfo() {
-            return _config ? _config.browserNotSupportedInfo : undefined;
+            return ( _config ? _config.browserNotSupportedInfo : undefined) || DEFAULT_BROWSER_NOT_SUPPORTED_INFO;
         }
 
         /**
@@ -2397,7 +2453,9 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * Get browser not supported information text.
          *
          * @return {String} Browser not supported information text from configuration.
-         *                  May be {undefined} if not set in configuration.
+         *                  Default browser not supported text is given if configuration
+         *                  does not contain browser not supported information text.
+         *                  May not be {undefined}, {null} or empty.
          */
         this.getBrowserNotSupportedInfo = getBrowserNotSupportedInfo;
     };
@@ -3307,6 +3365,10 @@ fi.fmi.metoclient = fi.fmi.metoclient || {};
 fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
 fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
 
+if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Utils || !fi.fmi.metoclient.ui.animator.Utils) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.Utils is required for fi.fmi.metoclient.ui.animator.Animator!";
+}
+
 if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Factory || !fi.fmi.metoclient.ui.animator.Factory) {
     throw "ERROR: fi.fmi.metoclient.ui.animator.Factory is required for fi.fmi.metoclient.ui.animator.Animator!";
 }
@@ -3342,8 +3404,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
     // Constant variables.
 
-    // Default text to inform if browser is not supported.
-    var DEFAULT_BROWSER_NOT_SUPPORTED_INFO = "Browser not supported. Update browser.";
     // Time for debounce function.
     var DEBOUNCE_TIME = 10;
     // Maximum time for debounce function.
@@ -3361,14 +3421,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
     };
 
     // Instance independent functions.
-
-    /**
-     * @return {Boolean} Browser is supported if {true}.
-     */
-    function isBrowserSupported() {
-        // Browser is supported if IE9+.
-        return document.addEventListener;
-    }
 
     /**
      * Deep clone callback function for lodash.
@@ -4528,8 +4580,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *                         May be {undefined} or {null} but then operation is ignored.
          */
         function createStructure(options) {
-            if (!isBrowserSupported()) {
-                var errorStr = _config.getBrowserNotSupportedInfo() || DEFAULT_BROWSER_NOT_SUPPORTED_INFO;
+            if (!fi.fmi.metoclient.ui.animator.Utils.isBrowserSupported()) {
+                var errorStr = _config.getBrowserNotSupportedInfo();
                 if (options) {
                     var errorSelector = options.animatorContainerDivId || options.animationDivId;
                     if (errorSelector) {
