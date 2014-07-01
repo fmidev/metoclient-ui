@@ -38,6 +38,9 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
 
     // Private constants.
 
+    // Default text to inform if browser is not supported.
+    var DEFAULT_BROWSER_NOT_SUPPORTED_INFO = "Browser not supported. Update browser.";
+
     // If configuration uses auto for time value,
     // capabilities is used to get the proper time.
     var CAPABILITY_TIME_AUTO = "auto";
@@ -631,7 +634,7 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * See API for function description.
          */
         function getBrowserNotSupportedInfo() {
-            return _config ? _config.browserNotSupportedInfo : undefined;
+            return ( _config ? _config.browserNotSupportedInfo : undefined) || DEFAULT_BROWSER_NOT_SUPPORTED_INFO;
         }
 
         /**
@@ -1039,7 +1042,9 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          * Get browser not supported information text.
          *
          * @return {String} Browser not supported information text from configuration.
-         *                  May be {undefined} if not set in configuration.
+         *                  Default browser not supported text is given if configuration
+         *                  does not contain browser not supported information text.
+         *                  May not be {undefined}, {null} or empty.
          */
         this.getBrowserNotSupportedInfo = getBrowserNotSupportedInfo;
     };

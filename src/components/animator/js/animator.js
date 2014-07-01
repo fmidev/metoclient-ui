@@ -26,6 +26,10 @@ fi.fmi.metoclient = fi.fmi.metoclient || {};
 fi.fmi.metoclient.ui = fi.fmi.metoclient.ui || {};
 fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
 
+if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Utils || !fi.fmi.metoclient.ui.animator.Utils) {
+    throw "ERROR: fi.fmi.metoclient.ui.animator.Utils is required for fi.fmi.metoclient.ui.animator.Animator!";
+}
+
 if ("undefined" === typeof fi.fmi.metoclient.ui.animator.Factory || !fi.fmi.metoclient.ui.animator.Factory) {
     throw "ERROR: fi.fmi.metoclient.ui.animator.Factory is required for fi.fmi.metoclient.ui.animator.Animator!";
 }
@@ -61,8 +65,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
     // Constant variables.
 
-    // Default text to inform if browser is not supported.
-    var DEFAULT_BROWSER_NOT_SUPPORTED_INFO = "Browser not supported. Update browser.";
     // Time for debounce function.
     var DEBOUNCE_TIME = 10;
     // Maximum time for debounce function.
@@ -80,14 +82,6 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
     };
 
     // Instance independent functions.
-
-    /**
-     * @return {Boolean} Browser is supported if {true}.
-     */
-    function isBrowserSupported() {
-        // Browser is supported if IE9+.
-        return document.addEventListener;
-    }
 
     /**
      * Deep clone callback function for lodash.
@@ -1247,8 +1241,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *                         May be {undefined} or {null} but then operation is ignored.
          */
         function createStructure(options) {
-            if (!isBrowserSupported()) {
-                var errorStr = _config.getBrowserNotSupportedInfo() || DEFAULT_BROWSER_NOT_SUPPORTED_INFO;
+            if (!fi.fmi.metoclient.ui.animator.Utils.isBrowserSupported()) {
+                var errorStr = _config.getBrowserNotSupportedInfo();
                 if (options) {
                     var errorSelector = options.animatorContainerDivId || options.animationDivId;
                     if (errorSelector) {

@@ -45,6 +45,9 @@ fi.fmi.metoclient.ui.animator = fi.fmi.metoclient.ui.animator || {};
  */
 fi.fmi.metoclient.ui.animator.Utils = (function() {
 
+    // Default text to inform if browser is not supported.
+    var DEFAULT_BROWSER_NOT_SUPPORTED_INFO = "Browser not supported. Update browser.";
+
     /**
      * Function to provide {bind} if an older browser does not support it natively.
      *
@@ -303,6 +306,37 @@ fi.fmi.metoclient.ui.animator.Utils = (function() {
     };
 
     /**
+     * See API for function description.
+     */
+    var isBrowserSupported = function() {
+        // Browsers and their versions are checked here by using
+        // blacklist style. Therefore, browser and its version is supported
+        // as default if it is not explicitly checked here.
+        // IE browser is supported if IE9+.
+        var isSupported = window && document && document.addEventListener;
+        // Firefox and Safari browsers are supported if Firefox 4+, Safari 5.1+.
+        isSupported = isSupported && (window.HTMLCanvasElement ? true : false);
+        // Opera browser is supported if Opera 15+.
+        isSupported = isSupported && !(window.opera && parseFloat(window.opera.version()) < 15);
+        return isSupported;
+    };
+
+    /**
+     * See API for function description.
+     */
+    var checkBrowserSupport = function(infoClass, config) {
+        var isSupported = isBrowserSupported();
+        if (!isSupported && infoClass) {
+            var notSupportedText = ( config ? config.browserNotSupportedInfo : undefined ) || DEFAULT_BROWSER_NOT_SUPPORTED_INFO;
+            jQuery("." + infoClass).append('<div class="errorInfo">' + notSupportedText + '</div>');
+            if ("undefined" !== typeof console && console) {
+                console.error("ERROR: " + notSupportedText);
+            }
+        }
+        return isSupported;
+    };
+
+    /**
      * Return Utils API as an object.
      */
     return {
@@ -316,7 +350,26 @@ fi.fmi.metoclient.ui.animator.Utils = (function() {
          *                     May be {undefined} or {null}.
          * @return {Object} New Instance of the class with given arguments.
          */
-        createInstance : createInstance
+        createInstance : createInstance,
+
+        /**
+         * Check if browser in use is supported.
+         *
+         * @return {Boolean} Browser is supported if {true}.
+         */
+        isBrowserSupported : isBrowserSupported,
+
+        /**
+         * Browser not supported text is appended into {infoClass} element if browser in use is not supported.
+         *
+         * @param {String} infoClass HTML element class name that is used to show information
+         *                           if browser is not supported. May be {undefined} or {null}.
+         * @param {Object} config Animator configuration object that may contain localized
+         *                        browser not supported text. Default browser not supported
+         *                        text is used if {undefined}, {null} or empty.
+         * @return {Boolean} Browser is supported if {true}.
+         */
+        checkBrowserSupport : checkBrowserSupport
 
     };
 
