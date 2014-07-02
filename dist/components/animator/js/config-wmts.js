@@ -75,11 +75,13 @@ fi.fmi.metoclient.ui.animator.Config = {
                     storedQueryId : "fmi::forecast::tuliset::rr",
                     beginTime : "join",
                     name : "Precipitation forecast",
+                    hasLegend : false,
                     isForecast : true
                 }],
+                name : "Precipitation",
+                hasLegend : "http://wms.fmi.fi/fmi-apikey/insert-your-apikey-here/geoserver/wms?REQUEST=GetLegendGraphic&FORMAT=image/png&LAYER=Radar:suomi_rr_eureffin",
                 autoLoad : true,
-                maxAsyncLoadCount : 8,
-                name : "Precipitation"
+                maxAsyncLoadCount : 8
             }
         }]
     }],
