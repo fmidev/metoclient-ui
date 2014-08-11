@@ -223,7 +223,11 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         }
 
         function getScaleAreaWidth() {
-            return Math.floor(_scaleConfig.width - getScalePaddingLeft() - getScalePaddingRight());
+            var width = Math.floor(_scaleConfig.width - getScalePaddingLeft() - getScalePaddingRight());
+            if (width < 0) {
+                width = 0;
+            }
+            return width;
         }
 
         function getScaleAreaHeight() {
@@ -480,22 +484,25 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                 _progressCellSet.splice(0, 1)[0].remove();
             }
             var resolution = getResolution();
-            if (resolution) {
+            var scaleAreaWidth = getScaleAreaWidth();
+            if (resolution && scaleAreaWidth) {
                 var begin = getStartTime();
                 var end = getEndTime();
-                var beginX = getScaleAreaX();
-                var beginY = getScaleAreaY() + getScaleAreaHeight() - _scaleConfig.progressCellHeight;
                 var cellCount = Math.floor((end - begin) / resolution);
-                var cellWidth = getScaleAreaWidth() / cellCount;
-                for (var i = 0; i < cellCount; ++i) {
-                    var cell = _paper.rect(beginX + i * cellWidth, beginY, cellWidth, _scaleConfig.progressCellHeight);
-                    cell.attr("fill", _scaleConfig.bgColor).attr("stroke-width", "0");
-                    // Notice, cell ID actually describes the time value in the end of the cell instead of the beginning.
-                    // Therefore (i+1) is used. Then, when cell content is loaded, the cell that ends to the selected time
-                    // is handled instead of handling cell ahead of the time.
-                    cell.node.id = "animationProgressCell_" + (begin + (i + 1) * resolution);
-                    _progressCellSet.push(cell);
-                    jQuery(cell.node).mousewheel(handleMouseScroll);
+                if (cellCount > 0) {
+                    var cellWidth = scaleAreaWidth / cellCount;
+                    var beginX = getScaleAreaX();
+                    var beginY = getScaleAreaY() + getScaleAreaHeight() - _scaleConfig.progressCellHeight;
+                    for (var i = 0; i < cellCount; ++i) {
+                        var cell = _paper.rect(beginX + i * cellWidth, beginY, cellWidth, _scaleConfig.progressCellHeight);
+                        cell.attr("fill", _scaleConfig.bgColor).attr("stroke-width", "0");
+                        // Notice, cell ID actually describes the time value in the end of the cell instead of the beginning.
+                        // Therefore (i+1) is used. Then, when cell content is loaded, the cell that ends to the selected time
+                        // is handled instead of handling cell ahead of the time.
+                        cell.node.id = "animationProgressCell_" + (begin + (i + 1) * resolution);
+                        _progressCellSet.push(cell);
+                        jQuery(cell.node).mousewheel(handleMouseScroll);
+                    }
                 }
             }
         }
