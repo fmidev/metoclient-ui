@@ -94,6 +94,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
         var _sliderLabel;
         // This is updated when slider is dragged.
         var _dragStartX;
+        var _dragTime;
 
         // Private element position information functions.
         //------------------------------------------------
@@ -246,20 +247,16 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
 
         /**
          * Change time to the resolution time.
-         *
-         * Scaling and movement of elements may not provide exact times that correspond
-         * resolution times. This ties to fix the value if it is not even to resolution.
          */
         function timeToResolution(time) {
             var resolution = getResolution();
             if (time !== undefined && time !== null && resolution) {
-                // Use a little bit of a magic value here.
-                // The time may be a little bit below correct value because of
-                // position and scaling roundings. By adding a small time here
-                // the time may increase just enough to create correct result
-                // after flooring.
-                time += Math.floor(resolution / 4);
-                time -= time % resolution;
+                // Make sure steps are in given resolutions.
+                var reminder = time % resolution;
+                if (reminder) {
+                    // Time is ceiled on the resolution.
+                    time = time - reminder + resolution;
+                }
             }
             return time;
         }
@@ -346,6 +343,11 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          *                    tip of slider.
          */
         function moveSliderTo(x) {
+            if (undefined !== _dragTime) {
+                // Dragging is still going on.
+                // Therefore, ignore the given value and use the dragging value instead.
+                x = timeToPos(_dragTime);
+            }
             var delta = Math.round(x - getSliderTipOffsetX());
             var scaleX = getScaleAreaOffsetX();
             if (delta && x >= scaleX && x <= scaleX + getScaleAreaWidth()) {
@@ -370,6 +372,7 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
          */
         function startDragMove(x, y, event) {
             _timeController.proposePause();
+            // Notice, position is for the left side of the slider.
             _dragStartX = getSliderBackgroundOffsetX();
         }
 
@@ -385,15 +388,19 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // not the exact position of the slider. Also, dx is
             // relative to the drag start position, not to the
             // previous movement.
-            var newTime = posToTime(_dragStartX + dx);
-            _timeController.proposeTimeSelectionChange(newTime);
+            // Drag time is taken from the position of the slider tip.
+            _dragTime = posToTime(_dragStartX + _sliderConfig.sliderTipDx + dx);
+            _timeController.proposeTimeSelectionChange(_dragTime);
         }
 
         /**
          * @param event DOM event object.
          */
         function finalizeDragMove(event) {
+            var dragEndTime = _dragTime;
             _dragStartX = undefined;
+            _dragTime = undefined;
+            _timeController.proposeTimeSelectionChange(dragEndTime);
         }
 
         // Private scale functions.

@@ -1014,9 +1014,26 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
 
                             },
                             proposeTimeSelectionChange : function(time) {
-                                if ((time >= startTime) && (time <= endTime)) {
-                                    // Make sure steps are in given resolutions.
-                                    time = time - time % getResolution();
+                                var resolution = getResolution();
+                                if (resolution && undefined !== time && null !== time) {
+                                    // Force the time to be inside accepted range.
+                                    if (time < startTime) {
+                                        // Notice, time may be almost one resolution less than startTime
+                                        // because the time is ceiled on the resolution and the time step
+                                        // describes the time resolution before the given time.
+                                        time = startTime;
+
+                                    } else if (time > endTime) {
+                                        time = endTime;
+
+                                    } else {
+                                        // Make sure steps are in given resolutions.
+                                        var reminder = time % resolution;
+                                        if (reminder) {
+                                            // Time is ceiled on the resolution.
+                                            time = time - reminder + resolution;
+                                        }
+                                    }
                                     fireSelectedTimeChanged(time, timeSelectionListeners);
                                 }
                             },
