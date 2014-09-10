@@ -238,6 +238,14 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         };
 
         _events.animationframecontentreleased = function(event) {
+            // Animation should not continue in the background if map layers are being panned.
+            // If _requestAnimationTime has any value, it means that animation is going on.
+            if (undefined !== _requestAnimationTime) {
+                // Continue animation when tiles have been loaded because animation
+                // is paused during tile loading. Therefore, update continuation flag here.
+                _continueAnimationWhenLoadComplete = true;
+                firePause();
+            }
             progressbarLoadComplete(event.layer);
             jQuery.each(_animationEventsListeners, function(index, value) {
                 value.animationFrameContentReleasedCb(event);
