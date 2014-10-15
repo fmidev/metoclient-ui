@@ -1,3 +1,3 @@
 MetOClient UI
 
-Version: 1.6.10
+Version: 1.6.11
