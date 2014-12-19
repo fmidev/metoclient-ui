@@ -3263,6 +3263,8 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Hide slider during asynchronous process. Then, slider will be visible only in the proper position.
             _slider.hide();
             setTimeout(function() {
+                // Show slider before changing its properties to make sure they are updated properly.
+                _slider.show();
                 if (undefined !== defaultTimePosition && null !== defaultTimePosition) {
                     // Default time has been given. So, move slider to the given position.
                     moveSliderTo(timeToPos(defaultTimePosition));
@@ -3271,7 +3273,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                     // Scale beginning is used for the slider initial position.
                     moveSliderTo(getDefaultSliderOffsetX());
                 }
-                _slider.show();
                 // Reset initial time for label.
                 resetSliderLabelText();
             }, 0);
@@ -3660,6 +3661,28 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             }
         };
 
+        /**
+         * Initialize current time member variable if it has not been set before.
+         *
+         * @return {Integer} Current frame time which has also been set into member variable.
+         *                   May be {undefined} if configuration does not provide necessary information.
+         */
+        function initCurrentTime() {
+            // Calculate new default frame position if it has not been set before or if current position is out of bounds.
+            if (_currentTime === undefined || _currentTime < getBeginDate() || _currentTime > getEndDate()) {
+                var lastObservationDate = getLastObservationDate();
+                if (undefined !== lastObservationDate) {
+                    // Use last observation position as default if it is available.
+                    _currentTime = lastObservationDate.getTime();
+
+                } else {
+                    // Use the first frame as current frame.
+                    _currentTime = getBeginDate().getTime();
+                }
+            }
+            return _currentTime;
+        }
+
         // Functions that handle events.
         //------------------------------
 
@@ -3797,20 +3820,8 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         //--------------------------------------------------------------
 
         function showDefaultFrame() {
-            // Calculate new default frame position if it has not been set before or if current position is out of bounds.
-            if (_currentTime === undefined || _currentTime < getBeginDate() || _currentTime > getEndDate()) {
-                var lastObservationDate = getLastObservationDate();
-                if (undefined !== lastObservationDate) {
-                    // Use last observation position as default if it is available.
-                    _currentTime = lastObservationDate.getTime();
-
-                } else {
-                    // Use the first frame as current frame.
-                    _currentTime = getBeginDate().getTime();
-                }
-            }
             MyController.events.triggerEvent("timechanged", {
-                time : _currentTime
+                time : initCurrentTime()
             });
         }
 
@@ -3893,7 +3904,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          */
         function playAnimation() {
             if (_requestAnimationTime !== undefined && _config) {
-                // Loop this until stopped
+                // Loop this until stopped.
                 requestAnimationFrame(playAnimation);
                 // Request animation loops at certain vague frame rate.
                 // The requestAnimationFrame loops at time periods that are not
@@ -4301,7 +4312,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          *                                                    May not be {undefined} or {null}.
          */
         function createCtrl(ctrls, timeModel, timeController) {
-            var ac = new fi.fmi.metoclient.ui.animator.Controller(ctrls[0], ctrls.width(), ctrls.height(), _currentTime);
+            var ac = new fi.fmi.metoclient.ui.animator.Controller(ctrls[0], ctrls.width(), ctrls.height(), initCurrentTime());
             ac.setTimeModel(timeModel);
             ac.setTimeController(timeController);
             return ac;
