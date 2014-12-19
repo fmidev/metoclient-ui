@@ -791,6 +791,8 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             // Hide slider during asynchronous process. Then, slider will be visible only in the proper position.
             _slider.hide();
             setTimeout(function() {
+                // Show slider before changing its properties to make sure they are updated properly.
+                _slider.show();
                 if (undefined !== defaultTimePosition && null !== defaultTimePosition) {
                     // Default time has been given. So, move slider to the given position.
                     moveSliderTo(timeToPos(defaultTimePosition));
@@ -799,7 +801,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                     // Scale beginning is used for the slider initial position.
                     moveSliderTo(getDefaultSliderOffsetX());
                 }
-                _slider.show();
                 // Reset initial time for label.
                 resetSliderLabelText();
             }, 0);
