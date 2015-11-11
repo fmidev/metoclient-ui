@@ -377,7 +377,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
         }
 
         /**
-         * @return {Date} Begin date should be gotten from the configuration.
+         * @return {Date} End date should be gotten from the configuration.
          *                Otherwise, {undefined}.
          */
         function getEndDate() {
@@ -406,11 +406,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
          */
         function getLastObservationDate() {
             var time;
-            var tmp = getBeginDate().getTime();
+            var beginTime = getBeginDate().getTime();
             var forecastBeginTime = getForecastBeginDate().getTime();
-            while (forecastBeginTime > tmp) {
-                time = tmp;
-                tmp += getResolution();
+            var endTime = getEndDate().getTime();
+            if (beginTime < forecastBeginTime) {
+                // Observation time step exists.
+                // Notice, animation may end before forecast.
+                time = endTime < forecastBeginTime ? endTime : forecastBeginTime - getResolution();
             }
             return undefined === time ? undefined : new Date(time);
         }
