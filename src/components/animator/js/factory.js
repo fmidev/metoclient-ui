@@ -881,6 +881,13 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
         /**
          * See API for function description.
          */
+        function getAnimationShowUtc() {
+            return _config && _config.animationShowUtc ? true : false;
+        }
+
+        /**
+         * See API for function description.
+         */
         function getCapabilities() {
             var capabilities = [];
             // Get capabilities objects from the container.
@@ -1037,6 +1044,11 @@ fi.fmi.metoclient.ui.animator.Factory = (function() {
          *                May not be {undefined}.
          */
         this.getForecastBeginDate = getForecastBeginDate;
+
+        /**
+         * @return {Boolean} Animation shows UTC time if {true}. Else {false}.
+         */
+        this.getAnimationShowUtc = getAnimationShowUtc;
 
         /**
          * Get browser not supported information text.

@@ -42,15 +42,6 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
     var _labelFontFamily = "Arial";
     var _labelFontSize = 14;
 
-    function getTimeStr(date) {
-        var hours = date.getHours();
-        var minutes = date.getMinutes();
-        var timeStr = hours > 9 ? hours : "0" + hours;
-        timeStr += ":";
-        timeStr += minutes > 9 ? minutes : "0" + minutes;
-        return timeStr;
-    }
-
     /**
      * Constructor that is provided from this class for public instantiation.
      *
@@ -170,6 +161,23 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
             return getScaleAreaOffsetX() + getResolution() / getTimeScale();
         }
 
+        // Private utils functions.
+        //------------------------------
+
+        function getTimeStr(date) {
+            var useUtc = getAnimationShowUtc();
+            var hours = useUtc ? date.getUTCHours() : date.getHours();
+            var minutes = useUtc ? date.getUTCMinutes() : date.getMinutes();
+            var timeStr = hours > 9 ? hours : "0" + hours;
+            timeStr += ":";
+            timeStr += minutes > 9 ? minutes : "0" + minutes;
+            return timeStr;
+        }
+
+        function getZoneStr() {
+            return getAnimationShowUtc() ? "UTC" : "";
+        }
+
         // Private controller functions.
         //------------------------------
 
@@ -207,6 +215,10 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
 
         function getResolution() {
             return _model ? _model.getResolution() : 0;
+        }
+
+        function getAnimationShowUtc() {
+            return _model.getAnimationShowUtc();
         }
 
         /**
@@ -575,6 +587,18 @@ fi.fmi.metoclient.ui.animator.Controller = (function() {
                                 // Remove hour label because it overlaps the border.
                                 hourLabel.remove();
                             }
+                        }
+                        if (i === cellCount) {
+                            var zoneLabel = _paper.text(positionX, getScaleAreaY() + getScaleAreaHeight() * 2 / 3, getZoneStr()).attr({
+                                "font-family" : _labelFontFamily,
+                                "font-size" : _labelFontSize,
+                                "fill" : Raphael.getRGB("black"),
+                                "text-anchor" : "end"
+                            });
+                            // Check if the label fits into the scale area.
+                            var zoneLabelNode = jQuery(zoneLabel.node);
+                            _tickSet.push(zoneLabel);
+                            jQuery(zoneLabel.node).mousewheel(handleMouseScroll);
                         }
                     }
                     previousHours = date.getHours();

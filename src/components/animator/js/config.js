@@ -532,6 +532,10 @@ fi.fmi.metoclient.ui.animator.Config = {
     // data is not requested.
     animationDeltaToEndTime : 2 * 60 * 60 * 1000,
 
+    // Animation shows UTC time if set {true}.
+    // Local time is shown if {undefined}, {null} or {false}.
+    animationShowUtc : undefined,
+
     // Localized text that is used if browser is not supported.
     // Default value is used if not defined here or {undefined}, {null} or empty.
     browserNotSupportedInfo : "Browser not supported. Update browser."

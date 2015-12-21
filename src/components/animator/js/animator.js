@@ -417,6 +417,13 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
             return undefined === time ? undefined : new Date(time);
         }
 
+        /**
+         * @return {Boolean} Animation shows UTC time if {true}. Else {false}.
+         */
+        function getAnimationShowUtc() {
+            return _config.getAnimationShowUtc();
+        }
+
         // UI component handler functions.
         //--------------------------------
 
@@ -974,6 +981,7 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                     var ctrlSelector = "#" + _options.controllerDivId;
                     var ctrls = jQuery(ctrlSelector);
                     if (ctrls.length) {
+                        var animationShowUtc = getAnimationShowUtc();
                         var currentTime = (new Date()).getTime();
                         var startTime = getBeginDate().getTime();
                         var endTime = getEndDate().getTime();
@@ -1001,6 +1009,9 @@ fi.fmi.metoclient.ui.animator.Animator = (function() {
                             },
                             getForecastStartTime : function() {
                                 return fctStart;
+                            },
+                            getAnimationShowUtc : function() {
+                                return animationShowUtc;
                             },
                             addTimePeriodChangeListener : function(l) {
                                 timePeriodListeners.push(l);
