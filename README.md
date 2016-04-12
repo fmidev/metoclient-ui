@@ -2,7 +2,7 @@ MetOClient UI
 =============
 
 *MetOClient UI* is a reference implementation for 
-[http://en.ilmatieteenlaitos.fi/open-data-manual](FMI's Open Data Services).
+[FMI's Open Data Services](http://en.ilmatieteenlaitos.fi/open-data-manual).
 
 MetOClient UI shows an example implementation on how to present and control 
 FMI Web Feature Service (WFS) and Web Map Service (WMS) content in a web page. 
@@ -14,8 +14,8 @@ of the FMI's WMS service for other than evalutation purposes is not allowed beca
 network bandwidth and processing requirements.
 
 You may also want to see these MetOClient related projects:
-* [https://github.com/fmidev/metolib](MetOLib)
-* [https://github.com/fmidev/openlayers-animation](openlayers-animation)
+* [MetOLib](https://github.com/fmidev/metolib)
+* [openlayers-animation](https://github.com/fmidev/openlayers-animation)
 
 Folder structure
 ----------------
