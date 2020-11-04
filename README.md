@@ -1,6 +1,10 @@
 MetOClient UI
 =============
 
+**This product has reached end-of-life status and is no longer 
+maintained. For your weather data visualisation needs in JavaScript
+check out [the MetOClient-project](https://github.com/fmidev/metoclient).**
+
 *MetOClient UI* is a reference implementation for 
 [FMI's Open Data Services](http://en.ilmatieteenlaitos.fi/open-data-manual).
 
